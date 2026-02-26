@@ -9,6 +9,7 @@ import { LocationSelectPage } from './pages/LocationSelectPage';
 import { GuessUserHistoryPage } from './pages/GuessUserHistoryPage';
 import { AppStorePage } from './pages/AppStorePage';
 import { SongRequestPage } from './pages/SongRequestPage';
+import { RoadshowPage } from './pages/RoadshowPage';
 
 // Placeholder for Activity Page
 const ActivityPage = () => <div className="p-4 text-center text-gray-500">活动页面正在开发中...</div>;
@@ -26,6 +27,7 @@ function App() {
           <Route path="guess-music-locations" element={<LocationSelectPage />} />
           <Route path="guess-music/history/:userId" element={<GuessUserHistoryPage />} />
           <Route path="song-request" element={<SongRequestPage />} />
+          <Route path="roadshow" element={<RoadshowPage />} />
           <Route path="app-store" element={<AppStorePage />} />
           <Route path="profile" element={<UserPage />} />
           {/* Fallback */}

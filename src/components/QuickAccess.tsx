@@ -1,9 +1,8 @@
-import { Music, Trophy, Disc, LayoutGrid, MessageCircleHeart } from 'lucide-react';
+import { Disc, LayoutGrid, MessageCircleHeart, Guitar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const QUICK_ACCESS = [
-  { id: '1', name: '听歌识曲', icon: Music, color: 'text-white', bg: 'bg-gradient-to-r from-jieyou-mint to-teal-400', path: '/guess-music-locations' },
-  { id: '2', name: '积分榜', icon: Trophy, color: 'text-yellow-500', bg: 'bg-yellow-50', path: '/ranking' },
+  { id: '1', name: '路演', icon: Guitar, color: 'text-orange-500', bg: 'bg-orange-50', path: '/roadshow' },
   { id: '3', name: '单曲库', icon: Disc, color: 'text-purple-500', bg: 'bg-purple-50', path: '/music' },
   { id: '4', name: 'APP 铺子', icon: LayoutGrid, color: 'text-pink-500', bg: 'bg-pink-50', path: '/app-store' },
   { id: '5', name: '留言点歌', icon: MessageCircleHeart, color: 'text-white', bg: 'bg-gradient-to-r from-pink-400 to-purple-500', path: '/song-request' },
