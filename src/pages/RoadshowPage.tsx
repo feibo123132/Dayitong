@@ -1,10 +1,9 @@
-import { ArrowLeft, Music, Trophy, Settings, Menu, Edit2, Gift, X } from 'lucide-react';
+import { ArrowLeft, Music, Trophy, Settings, Gift, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 
 export const RoadshowPage = () => {
   const navigate = useNavigate();
-  const [showMenu, setShowMenu] = useState(false);
   const [showGiftModal, setShowGiftModal] = useState(false);
 
   const ROADSHOW_ITEMS = [

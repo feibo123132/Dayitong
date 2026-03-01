@@ -7,11 +7,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 export const RankingUserDetailPage = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
-  const { users, addHistoryRecord, deleteHistoryRecord, restoreHistoryRecord, permanentDeleteHistoryRecord, cleanupTrash } = useRankingStore();
+  const { users, addHistoryRecord, updateHistoryRecord, deleteHistoryRecord, restoreHistoryRecord, permanentDeleteHistoryRecord, cleanupTrash } = useRankingStore();
   
   const user = users.find(u => u.id === userId);
   const [isEditing, setIsEditing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null); // Track which record is being edited
   const [showMenu, setShowMenu] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
 
@@ -20,10 +21,20 @@ export const RankingUserDetailPage = () => {
     cleanupTrash();
   }, [cleanupTrash]);
 
-  // Add Form State
+  // Form State
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [reason, setReason] = useState('');
   const [scoreChange, setScoreChange] = useState('');
+
+  // Reset form when closing
+  useEffect(() => {
+    if (!showAddForm) {
+      setDate(new Date().toISOString().split('T')[0]);
+      setReason('');
+      setScoreChange('');
+      setEditingRecordId(null);
+    }
+  }, [showAddForm]);
 
   if (!user) {
     return (
@@ -39,18 +50,37 @@ export const RankingUserDetailPage = () => {
     );
   }
 
-  const handleAdd = (e: React.FormEvent) => {
+  const handleEditClick = (record: any) => {
+    // Only allow editing if NOT in trash mode
+    if (showTrash) return;
+    
+    setEditingRecordId(record.id);
+    setDate(record.date);
+    setReason(record.reason);
+    setScoreChange(String(record.scoreChange));
+    setShowAddForm(true);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!reason || !scoreChange) return;
 
-    addHistoryRecord(user.id, {
-      date,
-      reason,
-      scoreChange: Number(scoreChange)
-    });
+    if (editingRecordId) {
+      // Update existing record
+      updateHistoryRecord(user.id, editingRecordId, {
+        date,
+        reason,
+        scoreChange: Number(scoreChange)
+      });
+    } else {
+      // Add new record
+      addHistoryRecord(user.id, {
+        date,
+        reason,
+        scoreChange: Number(scoreChange)
+      });
+    }
 
-    setReason('');
-    setScoreChange('');
     setShowAddForm(false);
   };
 
@@ -172,7 +202,10 @@ export const RankingUserDetailPage = () => {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative overflow-hidden"
+                  onClick={() => handleEditClick(record)}
+                  className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative overflow-hidden transition-all ${
+                    !showTrash ? 'cursor-pointer hover:shadow-md hover:border-jieyou-mint/30 active:scale-[0.99]' : ''
+                  }`}
                 >
                   <div className="flex justify-between items-start">
                     <div>
@@ -239,13 +272,13 @@ export const RankingUserDetailPage = () => {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-gray-800">添加积分记录</h3>
+              <h3 className="text-lg font-bold text-gray-800">{editingRecordId ? '编辑积分记录' : '添加积分记录'}</h3>
               <button onClick={() => setShowAddForm(false)} className="text-gray-400 hover:text-gray-600">
                 <X size={24} />
               </button>
             </div>
 
-            <form onSubmit={handleAdd} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">日期</label>
                 <input
@@ -285,7 +318,7 @@ export const RankingUserDetailPage = () => {
                 type="submit"
                 className="w-full py-3 bg-gradient-to-r from-jieyou-mint to-teal-500 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all mt-2"
               >
-                确认添加
+                {editingRecordId ? '保存修改' : '确认添加'}
               </button>
             </form>
           </div>

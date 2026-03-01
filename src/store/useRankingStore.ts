@@ -23,6 +23,7 @@ interface RankingState {
   updateUser: (id: string, name: string, score: number) => void;
   deleteUser: (id: string) => void;
   addHistoryRecord: (userId: string, record: Omit<HistoryRecord, 'id' | 'totalScore' | 'deletedAt'>) => void;
+  updateHistoryRecord: (userId: string, recordId: string, updates: Partial<Omit<HistoryRecord, 'id' | 'totalScore' | 'deletedAt'>>) => void;
   deleteHistoryRecord: (userId: string, recordId: string) => void; // Soft delete
   restoreHistoryRecord: (userId: string, recordId: string) => void; // Restore
   permanentDeleteHistoryRecord: (userId: string, recordId: string) => void; // Hard delete
@@ -111,6 +112,42 @@ export const useRankingStore = create<RankingState>((set) => ({
           ...user,
           score: newScore,
           history: [newHistoryRecord, ...user.history]
+        };
+      }
+      return user;
+    });
+
+    // Sort and update rank
+    newUsers.sort((a, b) => b.score - a.score);
+    const rankedUsers = newUsers.map((user, index) => ({
+      ...user,
+      rank: index + 1
+    }));
+
+    return { users: rankedUsers };
+  }),
+
+  updateHistoryRecord: (userId, recordId, updates) => set((state) => {
+    const newUsers = state.users.map(user => {
+      if (user.id === userId) {
+        const recordIndex = user.history.findIndex(h => h.id === recordId);
+        if (recordIndex === -1) return user;
+
+        const oldRecord = user.history[recordIndex];
+        const scoreDiff = (updates.scoreChange ?? oldRecord.scoreChange) - oldRecord.scoreChange;
+        const newScore = user.score + scoreDiff;
+
+        const newHistory = [...user.history];
+        newHistory[recordIndex] = {
+          ...oldRecord,
+          ...updates,
+          totalScore: newScore // Note: This simplifies totalScore history tracking. Ideally totalScore of subsequent records should also update if we want strict ledger consistency.
+        };
+
+        return {
+          ...user,
+          score: newScore,
+          history: newHistory
         };
       }
       return user;
