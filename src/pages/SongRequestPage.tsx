@@ -17,35 +17,46 @@ export const SongRequestPage = () => {
   const [artist, setArtist] = useState('');
   const [message, setMessage] = useState('');
 
-  const [editForm, setEditForm] = useState<Partial<SongRequest>>({});
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!songName.trim()) return;
-
-    addRequest(songName, artist, message);
-    setShowForm(false);
+  const resetForm = () => {
+    setEditingId(null);
     setSongName('');
     setArtist('');
     setMessage('');
   };
 
-  const startEdit = (req: SongRequest) => {
+  const closeForm = () => {
+    setShowForm(false);
+    resetForm();
+  };
+
+  const openCreateForm = () => {
+    resetForm();
+    setShowForm(true);
+  };
+
+  const openEditForm = (req: SongRequest) => {
     setEditingId(req.id);
-    setEditForm(req);
+    setSongName(req.songName);
+    setArtist(req.artist || '');
+    setMessage(req.message || '');
+    setShowForm(true);
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm({});
-  };
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!songName.trim()) return;
 
-  const saveEdit = () => {
-    if (editingId && editForm) {
-      updateRequest(editingId, editForm);
-      setEditingId(null);
-      setEditForm({});
+    if (editingId) {
+      updateRequest(editingId, {
+        songName,
+        artist,
+        message,
+      });
+    } else {
+      addRequest(songName, artist, message);
     }
+
+    closeForm();
   };
 
   const handleDelete = (id: string) => {
@@ -166,79 +177,65 @@ export const SongRequestPage = () => {
 
       <div className="max-w-md mx-auto px-4 space-y-4">
         {sortedRequests.map((req) => (
-          <div key={req.id} className="bg-white rounded-2xl p-4 shadow-sm border border-pink-100 relative overflow-hidden group">
-            {editingId === req.id ? (
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  value={editForm.songName || ''}
-                  onChange={(e) => setEditForm({ ...editForm, songName: e.target.value })}
-                  className="w-full text-lg font-bold text-gray-800 border-b border-pink-300 focus:outline-none"
-                  placeholder="歌名"
-                />
-                <input
-                  type="text"
-                  value={editForm.artist || ''}
-                  onChange={(e) => setEditForm({ ...editForm, artist: e.target.value })}
-                  className="w-full text-xs text-gray-500 border-b border-pink-300 focus:outline-none"
-                  placeholder="歌手"
-                />
-                <textarea
-                  value={editForm.message || ''}
-                  onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
-                  className="w-full bg-pink-50 rounded-xl p-3 text-sm text-gray-600 focus:outline-none resize-none"
-                  placeholder="留言内容"
-                />
-                <div className="flex justify-end space-x-2">
-                  <button onClick={saveEdit} className="text-green-500 hover:bg-green-50 p-1 rounded">保存</button>
-                  <button onClick={cancelEdit} className="text-gray-400 hover:bg-gray-100 p-1 rounded">取消</button>
-                </div>
+          <div
+            key={req.id}
+            onClick={() => {
+              if (!isEditing) openEditForm(req);
+            }}
+            className={`bg-white rounded-2xl p-4 shadow-sm border border-pink-100 relative overflow-hidden group transition-all ${
+              isEditing ? 'cursor-default' : 'cursor-pointer hover:shadow-md'
+            }`}
+          >
+            <div className="flex justify-between items-start mb-2">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">{req.songName}</h3>
+                {req.artist && <p className="text-xs text-gray-500">{req.artist}</p>}
               </div>
-            ) : (
-              <>
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h3 className="text-lg font-bold text-gray-800">{req.songName}</h3>
-                    {req.artist && <p className="text-xs text-gray-500">{req.artist}</p>}
-                  </div>
-                  {getStatusBadge(req.status)}
-                </div>
+              {getStatusBadge(req.status)}
+            </div>
 
-                {req.message && (
-                  <div className="bg-pink-50 rounded-xl p-3 text-sm text-gray-600 mb-3 relative">
-                    <div className="absolute -top-1 left-4 w-2 h-2 bg-pink-50 rotate-45"></div>
-                    "{req.message}"
-                  </div>
-                )}
-
-                <div className="flex justify-end items-center text-gray-400 text-xs">
-                  {isEditing ? (
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={() => startEdit(req)}
-                        className="text-blue-400 hover:text-blue-600"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(req.id)}
-                        className="text-red-400 hover:text-red-600"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => likeRequest(req.id)}
-                      className="flex items-center space-x-1 hover:text-pink-500 transition-colors group"
-                    >
-                      <Heart size={16} className={`group-active:scale-125 transition-transform ${req.likes > 0 ? 'fill-pink-500 text-pink-500' : ''}`} />
-                      <span>{req.likes}</span>
-                    </button>
-                  )}
-                </div>
-              </>
+            {req.message && (
+              <div className="bg-pink-50 rounded-xl p-3 text-sm text-gray-600 mb-3 relative">
+                <div className="absolute -top-1 left-4 w-2 h-2 bg-pink-50 rotate-45"></div>
+                "{req.message}"
+              </div>
             )}
+
+            <div className="flex justify-end items-center text-gray-400 text-xs">
+              {isEditing ? (
+                <div className="flex space-x-3">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditForm(req);
+                    }}
+                    className="text-blue-400 hover:text-blue-600"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(req.id);
+                    }}
+                    className="text-red-400 hover:text-red-600"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    likeRequest(req.id);
+                  }}
+                  className="flex items-center space-x-1 hover:text-pink-500 transition-colors group"
+                >
+                  <Heart size={16} className={`group-active:scale-125 transition-transform ${req.likes > 0 ? 'fill-pink-500 text-pink-500' : ''}`} />
+                  <span>{req.likes}</span>
+                </button>
+              )}
+            </div>
           </div>
         ))}
 
@@ -248,7 +245,7 @@ export const SongRequestPage = () => {
       {!isEditing && (
         <div className="fixed left-1/2 -translate-x-1/2 w-full max-w-md px-4 pt-4 pb-3 bg-gradient-to-t from-white via-white to-transparent z-40 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)]">
           <button
-            onClick={() => setShowForm(true)}
+            onClick={openCreateForm}
             className="w-full h-12 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full text-white font-bold shadow-lg shadow-pink-500/30 flex items-center justify-center hover:scale-[1.02] active:scale-95 transition-all"
           >
             参与点歌
@@ -260,7 +257,7 @@ export const SongRequestPage = () => {
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300">
             <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-              <Music className="mr-2 text-pink-500" /> 我要点歌
+              <Music className="mr-2 text-pink-500" /> {editingId ? '编辑点歌' : '我要点歌'}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -302,7 +299,7 @@ export const SongRequestPage = () => {
               <div className="flex space-x-3 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowForm(false)}
+                  onClick={closeForm}
                   className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-colors"
                 >
                   取消
@@ -311,7 +308,7 @@ export const SongRequestPage = () => {
                   type="submit"
                   className="flex-1 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 transition-all flex items-center justify-center"
                 >
-                  <Send size={18} className="mr-2" /> 提交
+                  <Send size={18} className="mr-2" /> {editingId ? '保存' : '提交'}
                 </button>
               </div>
             </form>
