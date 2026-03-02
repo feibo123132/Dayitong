@@ -25,6 +25,30 @@ interface GuessMusicState {
   updateUserHistory: (userId: string, historyId: string, data: Partial<HistoryRecord>) => Promise<void>;
 }
 
+interface DbListResponse<T> {
+  data: T[];
+}
+
+type GuessUserDoc = Omit<GuessUser, 'id'> & { _id: string };
+
+const mapGuessUserDoc = (user: GuessUserDoc): GuessUser => ({
+  ...user,
+  id: user._id,
+});
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+  return '未知错误';
+};
+
 // 每次参与答题总数固定为 4 首
 const SONGS_PER_ROUND = 4;
 
@@ -89,9 +113,9 @@ export const useGuessMusicStore = create<GuessMusicState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await ensureAuth();
-      const res = await db.collection('Dayitong_guess_users').get();
+      const res = (await db.collection('Dayitong_guess_users').get()) as DbListResponse<GuessUserDoc>;
       
-      let users = res.data.map((u: any) => ({ ...u, id: u._id })) as GuessUser[];
+      let users = res.data.map(mapGuessUserDoc);
 
       // Initialize with mock data if empty
       if (users.length === 0) {
@@ -99,15 +123,15 @@ export const useGuessMusicStore = create<GuessMusicState>((set, get) => ({
         const addPromises = INITIAL_USERS.map(user => db.collection('Dayitong_guess_users').add(user));
         await Promise.all(addPromises);
         // Fetch again
-        const newRes = await db.collection('Dayitong_guess_users').get();
-        users = newRes.data.map((u: any) => ({ ...u, id: u._id })) as GuessUser[];
+        const newRes = (await db.collection('Dayitong_guess_users').get()) as DbListResponse<GuessUserDoc>;
+        users = newRes.data.map(mapGuessUserDoc);
       }
 
       const sortedUsers = sortAndRankUsers(users);
       set({ users: sortedUsers, isLoading: false });
-    } catch (err: any) {
-      console.error('Fetch users failed:', err);
-      set({ error: err.message, isLoading: false });
+    } catch (error: unknown) {
+      console.error('Fetch users failed:', error);
+      set({ error: getErrorMessage(error), isLoading: false });
     }
   },
 

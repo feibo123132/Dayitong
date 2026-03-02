@@ -1,7 +1,18 @@
-﻿import { ChevronRight, CircleEllipsis, Heart, MessageSquareHeart, Music2, Settings, Smile, SquareLibrary, Trophy, UserRound } from 'lucide-react';
+﻿import {
+  ChevronRight,
+  CircleEllipsis,
+  Heart,
+  MessageSquareHeart,
+  Music2,
+  Settings,
+  Smile,
+  SquareLibrary,
+  Trophy,
+  UserRound,
+} from 'lucide-react';
 import type { ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSongRequestStore } from '../store/useSongRequestStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 type MenuItem = {
   id: string;
@@ -83,14 +94,14 @@ const MENU_GROUPS: MenuItem[][] = [
       icon: Settings,
       iconBg: 'bg-slate-100',
       iconColor: 'text-slate-500',
-      extra: '开发中',
+      path: '/settings',
     },
   ],
 ];
 
 export const UserPage = () => {
   const navigate = useNavigate();
-  const requestCount = useSongRequestStore((state) => state.requests.length);
+  const { user } = useAuthStore();
 
   return (
     <div className="-mx-4 -mt-4 min-h-screen bg-[#f1f2f5] pb-24">
@@ -99,19 +110,17 @@ export const UserPage = () => {
           <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-teal-200 to-cyan-300 flex items-center justify-center shadow-sm">
             <UserRound size={30} className="text-white" />
           </div>
-          <div className="flex-1 ml-4 min-w-0">
-            <h2 className="text-2xl font-semibold text-slate-800 leading-tight">JIEYOU 用户</h2>
-            <p className="text-slate-500 mt-1 truncate">邮箱号：hello@jieyou.cn</p>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-slate-100 text-slate-600">
-                😊 Emoji
-              </span>
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-pink-50 text-pink-600">
-                点歌 {requestCount} 条
-              </span>
-            </div>
+          <div className="ml-4 flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-gray-900">JIEYOU</h1>
+            <p className="text-sm text-gray-500 mt-1 truncate">{user?.email || `ID: ${user?.uid?.slice(0, 8) || 'Unknown'}`}</p>
           </div>
-          <ChevronRight size={20} className="text-slate-300" />
+          <button
+            onClick={() => navigate('/profile-info')}
+            className="text-gray-400 hover:text-gray-600 p-2 text-2xl leading-none"
+            aria-label="个人资料"
+          >
+            →
+          </button>
         </div>
       </section>
 

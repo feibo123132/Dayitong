@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useRankingStore } from '../store/useRankingStore';
 import { ArrowLeft, Edit2, Plus, Trash2, Check, X, Menu, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import type { HistoryRecord } from '../store/useRankingStore';
 
 export const RankingUserDetailPage = () => {
   const { userId } = useParams<{ userId: string }>();
@@ -15,6 +16,7 @@ export const RankingUserDetailPage = () => {
   const [editingRecordId, setEditingRecordId] = useState<string | null>(null); // Track which record is being edited
   const [showMenu, setShowMenu] = useState(false);
   const [showTrash, setShowTrash] = useState(false);
+  const [nowTimestamp, setNowTimestamp] = useState(() => Date.now());
 
   // Auto cleanup on mount
   useEffect(() => {
@@ -26,15 +28,29 @@ export const RankingUserDetailPage = () => {
   const [reason, setReason] = useState('');
   const [scoreChange, setScoreChange] = useState('');
 
-  // Reset form when closing
+  const resetForm = () => {
+    setDate(new Date().toISOString().split('T')[0]);
+    setReason('');
+    setScoreChange('');
+    setEditingRecordId(null);
+  };
+
+  const openAddForm = () => {
+    resetForm();
+    setShowAddForm(true);
+  };
+
+  const closeAddForm = () => {
+    closeAddForm();
+    resetForm();
+  };
+
   useEffect(() => {
-    if (!showAddForm) {
-      setDate(new Date().toISOString().split('T')[0]);
-      setReason('');
-      setScoreChange('');
-      setEditingRecordId(null);
-    }
-  }, [showAddForm]);
+    const timer = setInterval(() => {
+      setNowTimestamp(Date.now());
+    }, 60 * 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   if (!user) {
     return (
@@ -50,7 +66,7 @@ export const RankingUserDetailPage = () => {
     );
   }
 
-  const handleEditClick = (record: any) => {
+  const handleEditClick = (record: HistoryRecord) => {
     // Only allow editing if NOT in trash mode
     if (showTrash) return;
     
@@ -184,7 +200,7 @@ export const RankingUserDetailPage = () => {
           </h2>
           {isEditing && !showTrash && (
             <button 
-              onClick={() => setShowAddForm(true)}
+              onClick={openAddForm}
               className="flex items-center text-sm font-bold text-jieyou-mint bg-teal-50 px-3 py-1.5 rounded-full"
             >
               <Plus size={16} className="mr-1" />
@@ -215,7 +231,7 @@ export const RankingUserDetailPage = () => {
                       </p>
                       {showTrash && record.deletedAt && (
                         <p className="text-xs text-red-400 mt-1">
-                          {Math.ceil((record.deletedAt + 7 * 24 * 60 * 60 * 1000 - Date.now()) / (24 * 60 * 60 * 1000))}天后过期
+                          {Math.ceil((record.deletedAt + 7 * 24 * 60 * 60 * 1000 - nowTimestamp) / (24 * 60 * 60 * 1000))}天后过期
                         </p>
                       )}
                     </div>
@@ -273,7 +289,7 @@ export const RankingUserDetailPage = () => {
           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-gray-800">{editingRecordId ? '编辑积分记录' : '添加积分记录'}</h3>
-              <button onClick={() => setShowAddForm(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={closeAddForm} className="text-gray-400 hover:text-gray-600">
                 <X size={24} />
               </button>
             </div>

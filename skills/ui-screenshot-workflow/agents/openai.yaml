@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Screenshot Workflow"
+  short_description: "Screenshot-driven UI iteration workflow for this repository."
+  default_prompt: "Use screenshot paths and route context to implement precise UI updates, then validate with type-check/build."

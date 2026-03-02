@@ -23,6 +23,30 @@ interface SongRequestState {
   deleteRequest: (id: string) => Promise<void>;
 }
 
+interface DbListResponse<T> {
+  data: T[];
+}
+
+type SongRequestDoc = Omit<SongRequest, 'id'> & { _id: string };
+
+const mapSongRequestDoc = (request: SongRequestDoc): SongRequest => ({
+  ...request,
+  id: request._id,
+});
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+  return '未知错误';
+};
+
 const INITIAL_REQUESTS: Omit<SongRequest, 'id'>[] = [
   {
     songName: '晴天',
@@ -59,24 +83,24 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await ensureAuth();
-      const res = await db.collection('Dayitong_song_requests').orderBy('createdAt', 'desc').get();
-      let requests = res.data.map((r: any) => ({ ...r, id: r._id })) as SongRequest[];
+      const res = (await db.collection('Dayitong_song_requests').orderBy('createdAt', 'desc').get()) as DbListResponse<SongRequestDoc>;
+      let requests = res.data.map(mapSongRequestDoc);
 
       if (requests.length === 0) {
         console.log('Initializing song_requests with mock data...');
         const addPromises = INITIAL_REQUESTS.map(req => db.collection('Dayitong_song_requests').add(req));
         await Promise.all(addPromises);
-        const newRes = await db.collection('Dayitong_song_requests').orderBy('createdAt', 'desc').get();
-        requests = newRes.data.map((r: any) => ({ ...r, id: r._id })) as SongRequest[];
+        const newRes = (await db.collection('Dayitong_song_requests').orderBy('createdAt', 'desc').get()) as DbListResponse<SongRequestDoc>;
+        requests = newRes.data.map(mapSongRequestDoc);
       }
       
       // Sort manually just in case, though orderBy should work
       requests.sort((a, b) => b.createdAt - a.createdAt);
 
       set({ requests, isLoading: false });
-    } catch (err: any) {
-      console.error('Fetch requests failed:', err);
-      set({ error: err.message, isLoading: false });
+    } catch (error: unknown) {
+      console.error('Fetch requests failed:', error);
+      set({ error: getErrorMessage(error), isLoading: false });
     }
   },
 

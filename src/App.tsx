@@ -11,6 +11,9 @@ import { GuessUserHistoryPage } from './pages/GuessUserHistoryPage';
 import { AppStorePage } from './pages/AppStorePage';
 import { SongRequestPage } from './pages/SongRequestPage';
 import { RoadshowPage } from './pages/RoadshowPage';
+import { LoginPage } from './pages/LoginPage';
+import { ProfileInfoPage } from './pages/ProfileInfoPage';
+import { SettingsPage } from './pages/SettingsPage';
 
 // Placeholder for Activity Page
 const ActivityPage = () => <div className="p-4 text-center text-gray-500">活动页面正在开发中...</div>;
@@ -32,6 +35,9 @@ function App() {
           <Route path="roadshow" element={<RoadshowPage />} />
           <Route path="app-store" element={<AppStorePage />} />
           <Route path="profile" element={<UserPage />} />
+          <Route path="profile-info" element={<ProfileInfoPage />} />
+          <Route path="login" element={<LoginPage />} />
+          <Route path="settings" element={<SettingsPage />} />
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

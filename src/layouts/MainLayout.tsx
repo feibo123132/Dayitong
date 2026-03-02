@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useGuessMusicStore } from '../store/useGuessMusicStore';
 import { useRankingStore } from '../store/useRankingStore';
 import { useSongRequestStore } from '../store/useSongRequestStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 let hasInitializedCloudData = false;
 
@@ -16,11 +17,15 @@ export const MainLayout = () => {
     if (hasInitializedCloudData) return;
     hasInitializedCloudData = true;
 
-    void Promise.allSettled([
-      useGuessMusicStore.getState().fetchUsers(),
-      useRankingStore.getState().fetchUsers(),
-      useSongRequestStore.getState().fetchRequests(),
-    ]);
+    // Initialize Auth first
+    useAuthStore.getState().initAuth().then(() => {
+      // Then fetch data
+      void Promise.allSettled([
+        useGuessMusicStore.getState().fetchUsers(),
+        useRankingStore.getState().fetchUsers(),
+        useSongRequestStore.getState().fetchRequests(),
+      ]);
+    });
   }, []);
 
   return (

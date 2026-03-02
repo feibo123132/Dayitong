@@ -34,6 +34,30 @@ interface RankingState {
   cleanupTrash: () => Promise<void>;
 }
 
+interface DbListResponse<T> {
+  data: T[];
+}
+
+type RankingUserDoc = Omit<User, 'id'> & { _id: string };
+
+const mapRankingUserDoc = (user: RankingUserDoc): User => ({
+  ...user,
+  id: user._id,
+});
+
+const getErrorMessage = (error: unknown): string => {
+  if (error instanceof Error && error.message) return error.message;
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'message' in error &&
+    typeof (error as { message?: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+  return '未知错误';
+};
+
 const INITIAL_USERS: Omit<User, 'id'>[] = [
   { 
     name: '吉他小王子', 
@@ -60,15 +84,15 @@ export const useRankingStore = create<RankingState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await ensureAuth();
-      const res = await db.collection('Dayitong_ranking_users').get();
-      let users = res.data.map((u: any) => ({ ...u, id: u._id })) as User[];
+      const res = (await db.collection('Dayitong_ranking_users').get()) as DbListResponse<RankingUserDoc>;
+      let users = res.data.map(mapRankingUserDoc);
 
       if (users.length === 0) {
         console.log('Initializing ranking_users with mock data...');
         const addPromises = INITIAL_USERS.map(user => db.collection('Dayitong_ranking_users').add(user));
         await Promise.all(addPromises);
-        const newRes = await db.collection('Dayitong_ranking_users').get();
-        users = newRes.data.map((u: any) => ({ ...u, id: u._id })) as User[];
+        const newRes = (await db.collection('Dayitong_ranking_users').get()) as DbListResponse<RankingUserDoc>;
+        users = newRes.data.map(mapRankingUserDoc);
       }
 
       // Sort and update rank
@@ -79,9 +103,9 @@ export const useRankingStore = create<RankingState>((set, get) => ({
       }));
       
       set({ users: rankedUsers, isLoading: false });
-    } catch (err: any) {
-      console.error('Fetch ranking users failed:', err);
-      set({ error: err.message, isLoading: false });
+    } catch (error: unknown) {
+      console.error('Fetch ranking users failed:', error);
+      set({ error: getErrorMessage(error), isLoading: false });
     }
   },
 
@@ -213,8 +237,9 @@ export const useRankingStore = create<RankingState>((set, get) => ({
       const newScore = user.score + recordToRestore.scoreChange;
       const newHistory = user.history.map(h => {
         if (h.id === recordId) {
-          const { deletedAt, ...rest } = h;
-          return rest as HistoryRecord;
+          const restored = { ...h };
+          delete restored.deletedAt;
+          return restored;
         }
         return h;
       });

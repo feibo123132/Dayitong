@@ -22,7 +22,10 @@ export const ensureAuth = async (): Promise<void> => {
   authInFlight = (async () => {
     const loginState = await auth.getLoginState();
     if (!loginState) {
-      // User needs to enable Anonymous Login in CloudBase Console > Login Authorization.
+      // For email login flow, we might not want auto-anonymous login 
+      // if we want to force user to login page.
+      // But for some features like viewing ranking, anonymous is fine.
+      // Let's keep it but be aware.
       await auth.signInAnonymously();
     }
   })();
