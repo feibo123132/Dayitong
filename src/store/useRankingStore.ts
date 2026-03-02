@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { db, ensureAuth } from '../lib/cloudbase';
 
 export interface HistoryRecord {
   id: string;
@@ -10,7 +11,7 @@ export interface HistoryRecord {
 }
 
 export interface User {
-  id: string;
+  id: string; // Mapped from _id
   name: string;
   score: number;
   rank: number;
@@ -19,20 +20,22 @@ export interface User {
 
 interface RankingState {
   users: User[];
-  addUser: (name: string, score: number) => void;
-  updateUser: (id: string, name: string, score: number) => void;
-  deleteUser: (id: string) => void;
-  addHistoryRecord: (userId: string, record: Omit<HistoryRecord, 'id' | 'totalScore' | 'deletedAt'>) => void;
-  updateHistoryRecord: (userId: string, recordId: string, updates: Partial<Omit<HistoryRecord, 'id' | 'totalScore' | 'deletedAt'>>) => void;
-  deleteHistoryRecord: (userId: string, recordId: string) => void; // Soft delete
-  restoreHistoryRecord: (userId: string, recordId: string) => void; // Restore
-  permanentDeleteHistoryRecord: (userId: string, recordId: string) => void; // Hard delete
-  cleanupTrash: () => void;
+  isLoading: boolean;
+  error: string | null;
+  fetchUsers: () => Promise<void>;
+  addUser: (name: string, score: number) => Promise<void>;
+  updateUser: (id: string, name: string, score: number) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  addHistoryRecord: (userId: string, record: Omit<HistoryRecord, 'id' | 'totalScore' | 'deletedAt'>) => Promise<void>;
+  updateHistoryRecord: (userId: string, recordId: string, updates: Partial<Omit<HistoryRecord, 'id' | 'totalScore' | 'deletedAt'>>) => Promise<void>;
+  deleteHistoryRecord: (userId: string, recordId: string) => Promise<void>; // Soft delete
+  restoreHistoryRecord: (userId: string, recordId: string) => Promise<void>; // Restore
+  permanentDeleteHistoryRecord: (userId: string, recordId: string) => Promise<void>; // Hard delete
+  cleanupTrash: () => Promise<void>;
 }
 
-const INITIAL_USERS: User[] = [
+const INITIAL_USERS: Omit<User, 'id'>[] = [
   { 
-    id: 'u1', 
     name: '吉他小王子', 
     score: 249, 
     rank: 1,
@@ -42,212 +45,227 @@ const INITIAL_USERS: User[] = [
       { id: 'h3', date: '2023-10-10', reason: '粉丝打赏', scoreChange: 169, totalScore: 249 }
     ]
   },
-  { id: 'u2', name: '民谣阿强', score: 239, rank: 2, history: [] },
-  { id: 'u3', name: '指弹大师', score: 206, rank: 3, history: [] },
-  { id: 'u4', name: '摇滚萝莉', score: 192, rank: 4, history: [] },
-  { id: 'u5', name: '和弦小白', score: 155, rank: 5, history: [] },
+  { name: '民谣阿强', score: 239, rank: 2, history: [] },
+  { name: '指弹大师', score: 206, rank: 3, history: [] },
+  { name: '摇滚萝莉', score: 192, rank: 4, history: [] },
+  { name: '和弦小白', score: 155, rank: 5, history: [] },
 ];
 
-export const useRankingStore = create<RankingState>((set) => ({
-  users: INITIAL_USERS,
-  
-  addUser: (name, score) => set((state) => {
-    const newUser: User = {
-      id: `u${Date.now()}`,
-      name,
-      score,
-      rank: 0,
-      history: []
-    };
-    const newUsers = [...state.users, newUser];
-    
-    // Sort and update rank
-    newUsers.sort((a, b) => b.score - a.score);
-    const rankedUsers = newUsers.map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
-    
-    return { users: rankedUsers };
-  }),
+export const useRankingStore = create<RankingState>((set, get) => ({
+  users: [],
+  isLoading: false,
+  error: null,
 
-  updateUser: (id, name, score) => set((state) => {
-    const newUsers = state.users.map(user => 
-      user.id === id ? { ...user, name, score } : user
-    );
-    
-    // Sort and update rank
-    newUsers.sort((a, b) => b.score - a.score);
-    const rankedUsers = newUsers.map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
-    
-    return { users: rankedUsers };
-  }),
+  fetchUsers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      await ensureAuth();
+      const res = await db.collection('Dayitong_ranking_users').get();
+      let users = res.data.map((u: any) => ({ ...u, id: u._id })) as User[];
 
-  deleteUser: (id) => set((state) => {
-    const newUsers = state.users.filter(user => user.id !== id);
-    
-    // Sort and update rank
-    newUsers.sort((a, b) => b.score - a.score);
-    const rankedUsers = newUsers.map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
-    
-    return { users: rankedUsers };
-  }),
-
-  addHistoryRecord: (userId, record) => set((state) => {
-    const newUsers = state.users.map(user => {
-      if (user.id === userId) {
-        const newScore = user.score + record.scoreChange;
-        const newHistoryRecord: HistoryRecord = {
-          id: `h${Date.now()}`,
-          ...record,
-          totalScore: newScore
-        };
-        return {
-          ...user,
-          score: newScore,
-          history: [newHistoryRecord, ...user.history]
-        };
+      if (users.length === 0) {
+        console.log('Initializing ranking_users with mock data...');
+        const addPromises = INITIAL_USERS.map(user => db.collection('Dayitong_ranking_users').add(user));
+        await Promise.all(addPromises);
+        const newRes = await db.collection('Dayitong_ranking_users').get();
+        users = newRes.data.map((u: any) => ({ ...u, id: u._id })) as User[];
       }
-      return user;
-    });
 
-    // Sort and update rank
-    newUsers.sort((a, b) => b.score - a.score);
-    const rankedUsers = newUsers.map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
+      // Sort and update rank
+      users.sort((a, b) => b.score - a.score);
+      const rankedUsers = users.map((user, index) => ({
+        ...user,
+        rank: index + 1
+      }));
+      
+      set({ users: rankedUsers, isLoading: false });
+    } catch (err: any) {
+      console.error('Fetch ranking users failed:', err);
+      set({ error: err.message, isLoading: false });
+    }
+  },
 
-    return { users: rankedUsers };
-  }),
+  addUser: async (name, score) => {
+    try {
+      await ensureAuth();
+      const newUser = {
+        name,
+        score,
+        rank: 0,
+        history: []
+      };
+      await db.collection('Dayitong_ranking_users').add(newUser);
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Add user failed:', err);
+    }
+  },
 
-  updateHistoryRecord: (userId, recordId, updates) => set((state) => {
-    const newUsers = state.users.map(user => {
-      if (user.id === userId) {
-        const recordIndex = user.history.findIndex(h => h.id === recordId);
-        if (recordIndex === -1) return user;
+  updateUser: async (id, name, score) => {
+    try {
+      await ensureAuth();
+      await db.collection('Dayitong_ranking_users').doc(id).update({ name, score });
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Update user failed:', err);
+    }
+  },
 
-        const oldRecord = user.history[recordIndex];
-        const scoreDiff = (updates.scoreChange ?? oldRecord.scoreChange) - oldRecord.scoreChange;
-        const newScore = user.score + scoreDiff;
+  deleteUser: async (id) => {
+    try {
+      await ensureAuth();
+      await db.collection('Dayitong_ranking_users').doc(id).remove();
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Delete user failed:', err);
+    }
+  },
 
-        const newHistory = [...user.history];
-        newHistory[recordIndex] = {
-          ...oldRecord,
-          ...updates,
-          totalScore: newScore // Note: This simplifies totalScore history tracking. Ideally totalScore of subsequent records should also update if we want strict ledger consistency.
-        };
+  addHistoryRecord: async (userId, record) => {
+    try {
+      await ensureAuth();
+      const user = get().users.find(u => u.id === userId);
+      if (!user) return;
 
-        return {
-          ...user,
-          score: newScore,
-          history: newHistory
-        };
-      }
-      return user;
-    });
+      const newScore = user.score + record.scoreChange;
+      const newHistoryRecord: HistoryRecord = {
+        id: `h${Date.now()}`,
+        ...record,
+        totalScore: newScore
+      };
+      
+      const newHistory = [newHistoryRecord, ...user.history];
+      
+      await db.collection('Dayitong_ranking_users').doc(userId).update({
+        score: newScore,
+        history: newHistory
+      });
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Add history failed:', err);
+    }
+  },
 
-    // Sort and update rank
-    newUsers.sort((a, b) => b.score - a.score);
-    const rankedUsers = newUsers.map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
+  updateHistoryRecord: async (userId, recordId, updates) => {
+    try {
+      await ensureAuth();
+      const user = get().users.find(u => u.id === userId);
+      if (!user) return;
 
-    return { users: rankedUsers };
-  }),
+      const recordIndex = user.history.findIndex(h => h.id === recordId);
+      if (recordIndex === -1) return;
 
-  deleteHistoryRecord: (userId, recordId) => set((state) => {
-    const now = Date.now();
-    const newUsers = state.users.map(user => {
-      if (user.id === userId) {
-        const recordToDelete = user.history.find(h => h.id === recordId);
-        if (!recordToDelete || recordToDelete.deletedAt) return user;
+      const oldRecord = user.history[recordIndex];
+      const scoreDiff = (updates.scoreChange ?? oldRecord.scoreChange) - oldRecord.scoreChange;
+      const newScore = user.score + scoreDiff;
 
-        const newScore = user.score - recordToDelete.scoreChange;
-        // Soft delete: mark with timestamp but keep in array
-        const newHistory = user.history.map(h => 
-          h.id === recordId ? { ...h, deletedAt: now } : h
-        );
-        
-        return {
-          ...user,
-          score: newScore,
-          history: newHistory
-        };
-      }
-      return user;
-    });
+      const newHistory = [...user.history];
+      newHistory[recordIndex] = {
+        ...oldRecord,
+        ...updates,
+        totalScore: newScore // Note: Simplified logic
+      };
 
-    // Sort and update rank
-    newUsers.sort((a, b) => b.score - a.score);
-    const rankedUsers = newUsers.map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
+      await db.collection('Dayitong_ranking_users').doc(userId).update({
+        score: newScore,
+        history: newHistory
+      });
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Update history failed:', err);
+    }
+  },
 
-    return { users: rankedUsers };
-  }),
+  deleteHistoryRecord: async (userId, recordId) => {
+    try {
+      await ensureAuth();
+      const user = get().users.find(u => u.id === userId);
+      if (!user) return;
 
-  restoreHistoryRecord: (userId, recordId) => set((state) => {
-    const newUsers = state.users.map(user => {
-      if (user.id === userId) {
-        const recordToRestore = user.history.find(h => h.id === recordId);
-        if (!recordToRestore || !recordToRestore.deletedAt) return user;
+      const now = Date.now();
+      const recordToDelete = user.history.find(h => h.id === recordId);
+      if (!recordToDelete || recordToDelete.deletedAt) return;
 
-        const newScore = user.score + recordToRestore.scoreChange;
-        // Restore: remove deletedAt
-        const newHistory = user.history.map(h => 
-          h.id === recordId ? { ...h, deletedAt: undefined } : h
-        );
-        
-        return {
-          ...user,
-          score: newScore,
-          history: newHistory
-        };
-      }
-      return user;
-    });
-
-    // Sort and update rank
-    newUsers.sort((a, b) => b.score - a.score);
-    const rankedUsers = newUsers.map((user, index) => ({
-      ...user,
-      rank: index + 1
-    }));
-
-    return { users: rankedUsers };
-  }),
-
-  permanentDeleteHistoryRecord: (userId, recordId) => set((state) => {
-    const newUsers = state.users.map(user => {
-      if (user.id === userId) {
-        const newHistory = user.history.filter(h => h.id !== recordId);
-        return { ...user, history: newHistory };
-      }
-      return user;
-    });
-    return { users: newUsers };
-  }),
-
-  cleanupTrash: () => set((state) => {
-    const now = Date.now();
-    const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
-    
-    const newUsers = state.users.map(user => {
-      const newHistory = user.history.filter(h => 
-        !h.deletedAt || (now - h.deletedAt <= SEVEN_DAYS)
+      const newScore = user.score - recordToDelete.scoreChange;
+      const newHistory = user.history.map(h => 
+        h.id === recordId ? { ...h, deletedAt: now } : h
       );
-      return { ...user, history: newHistory };
-    });
-    
-    return { users: newUsers };
-  })
+
+      await db.collection('Dayitong_ranking_users').doc(userId).update({
+        score: newScore,
+        history: newHistory
+      });
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Delete history failed:', err);
+    }
+  },
+
+  restoreHistoryRecord: async (userId, recordId) => {
+    try {
+      await ensureAuth();
+      const user = get().users.find(u => u.id === userId);
+      if (!user) return;
+
+      const recordToRestore = user.history.find(h => h.id === recordId);
+      if (!recordToRestore || !recordToRestore.deletedAt) return;
+
+      const newScore = user.score + recordToRestore.scoreChange;
+      const newHistory = user.history.map(h => {
+        if (h.id === recordId) {
+          const { deletedAt, ...rest } = h;
+          return rest as HistoryRecord;
+        }
+        return h;
+      });
+
+      await db.collection('Dayitong_ranking_users').doc(userId).update({
+        score: newScore,
+        history: newHistory
+      });
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Restore history failed:', err);
+    }
+  },
+
+  permanentDeleteHistoryRecord: async (userId, recordId) => {
+    try {
+      await ensureAuth();
+      const user = get().users.find(u => u.id === userId);
+      if (!user) return;
+
+      const newHistory = user.history.filter(h => h.id !== recordId);
+      // Score was already adjusted during soft delete
+
+      await db.collection('Dayitong_ranking_users').doc(userId).update({
+        history: newHistory
+      });
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Permanent delete history failed:', err);
+    }
+  },
+
+  cleanupTrash: async () => {
+    try {
+      await ensureAuth();
+      const users = get().users;
+      const now = Date.now();
+      const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000;
+
+      for (const user of users) {
+        const hasExpiredTrash = user.history.some(h => h.deletedAt && now - h.deletedAt > SEVEN_DAYS);
+        if (hasExpiredTrash) {
+          const newHistory = user.history.filter(h => !(h.deletedAt && now - h.deletedAt > SEVEN_DAYS));
+          await db.collection('Dayitong_ranking_users').doc(user.id).update({
+            history: newHistory
+          });
+        }
+      }
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Cleanup trash failed:', err);
+    }
+  }
 }));

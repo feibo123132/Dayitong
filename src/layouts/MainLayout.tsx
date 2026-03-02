@@ -1,9 +1,27 @@
 import { Outlet, NavLink, useLocation } from 'react-router-dom';
 import { Home, Music, User, Calendar } from 'lucide-react';
+import { useEffect } from 'react';
+import { useGuessMusicStore } from '../store/useGuessMusicStore';
+import { useRankingStore } from '../store/useRankingStore';
+import { useSongRequestStore } from '../store/useSongRequestStore';
+
+let hasInitializedCloudData = false;
 
 export const MainLayout = () => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+
+  // Guard against duplicate init in React StrictMode (dev).
+  useEffect(() => {
+    if (hasInitializedCloudData) return;
+    hasInitializedCloudData = true;
+
+    void Promise.allSettled([
+      useGuessMusicStore.getState().fetchUsers(),
+      useRankingStore.getState().fetchUsers(),
+      useSongRequestStore.getState().fetchRequests(),
+    ]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-jieyou-bg pb-20">

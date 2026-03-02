@@ -1,4 +1,4 @@
-import { ArrowLeft, Clock, Flame, Heart, MessageCircleHeart, Music, Plus, Send, Edit2, Trash2, Menu } from 'lucide-react';
+﻿import { ArrowLeft, Clock, Flame, Heart, MessageCircleHeart, Music, Send, Edit2, Trash2, Menu } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSongRequestStore } from '../store/useSongRequestStore';
@@ -13,18 +13,16 @@ export const SongRequestPage = () => {
   const [showMenu, setShowMenu] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  // Form State
   const [songName, setSongName] = useState('');
   const [artist, setArtist] = useState('');
   const [message, setMessage] = useState('');
 
-  // Edit Form State
   const [editForm, setEditForm] = useState<Partial<SongRequest>>({});
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!songName.trim()) return;
-    
+
     addRequest(songName, artist, message);
     setShowForm(false);
     setSongName('');
@@ -59,9 +57,8 @@ export const SongRequestPage = () => {
   const sortedRequests = [...requests].sort((a, b) => {
     if (activeTab === 'latest') {
       return b.createdAt - a.createdAt;
-    } else {
-      return b.likes - a.likes;
     }
+    return b.likes - a.likes;
   });
 
   const getStatusBadge = (status: SongRequest['status']) => {
@@ -75,13 +72,13 @@ export const SongRequestPage = () => {
       case 'accepted':
         return (
           <span className="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded-full">
-            ✅ 已安排
+            已安排
           </span>
         );
       default:
         return (
           <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-            🕒 待处理
+            待处理
           </span>
         );
     }
@@ -89,10 +86,9 @@ export const SongRequestPage = () => {
 
   return (
     <div className="min-h-screen bg-pink-50/50 pb-20">
-      {/* Top Banner */}
       <div className="relative h-48 w-full bg-gradient-to-r from-pink-400 to-purple-500 overflow-hidden rounded-b-[2rem] shadow-md">
         <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1516280440614-6697288d5d38?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center"></div>
-        
+
         <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
           <h1 className="text-3xl font-bold text-white drop-shadow-md tracking-wide flex items-center">
             <MessageCircleHeart className="mr-2" /> 留言点歌台
@@ -101,37 +97,40 @@ export const SongRequestPage = () => {
         </div>
       </div>
 
-      {/* Navigation Buttons (Moved outside to avoid overflow clipping) */}
-      <button 
+      <button
         onClick={() => navigate(-1)}
         className="absolute top-4 left-4 z-50 p-2 text-white/80 hover:text-white transition-colors bg-black/10 rounded-full backdrop-blur-sm"
       >
         <ArrowLeft size={24} />
       </button>
 
-      {/* Menu Button */}
       <div className="absolute top-4 right-4 z-50">
-        <button 
+        <button
           onClick={() => setShowMenu(!showMenu)}
           className="p-2 text-white/80 hover:text-white transition-colors bg-black/10 rounded-full backdrop-blur-sm"
         >
           <Menu size={24} />
         </button>
 
-        {/* Dropdown Menu */}
         {showMenu && (
           <div className="absolute right-0 top-12 mt-2 w-40 bg-white rounded-xl shadow-lg z-50 border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
-            <div 
+            <div
               className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
-              onClick={() => { setIsEditing(!isEditing); setShowMenu(false); }}
+              onClick={() => {
+                setIsEditing(!isEditing);
+                setShowMenu(false);
+              }}
             >
               <Edit2 size={18} className="mr-3 text-blue-500" />
               <span className="text-sm font-medium">{isEditing ? '退出编辑' : '编辑模式'}</span>
             </div>
-            
-            <div 
+
+            <div
               className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
-              onClick={() => { setShowMenu(false); alert('回收站功能开发中...'); }}
+              onClick={() => {
+                setShowMenu(false);
+                alert('回收站功能开发中...');
+              }}
             >
               <Trash2 size={18} className="mr-3 text-red-500" />
               <span className="text-sm font-medium">回收站</span>
@@ -140,14 +139,13 @@ export const SongRequestPage = () => {
         )}
       </div>
 
-      {/* Tabs */}
       <div className="flex justify-center -mt-6 relative z-10 mb-4">
         <div className="bg-white rounded-full p-1 shadow-md flex space-x-1">
           <button
             onClick={() => setActiveTab('latest')}
             className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
-              activeTab === 'latest' 
-                ? 'bg-gradient-to-r from-pink-400 to-purple-500 text-white shadow-sm' 
+              activeTab === 'latest'
+                ? 'bg-gradient-to-r from-pink-400 to-purple-500 text-white shadow-sm'
                 : 'text-gray-500 hover:bg-gray-50'
             }`}
           >
@@ -156,8 +154,8 @@ export const SongRequestPage = () => {
           <button
             onClick={() => setActiveTab('hot')}
             className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
-              activeTab === 'hot' 
-                ? 'bg-gradient-to-r from-pink-400 to-purple-500 text-white shadow-sm' 
+              activeTab === 'hot'
+                ? 'bg-gradient-to-r from-pink-400 to-purple-500 text-white shadow-sm'
                 : 'text-gray-500 hover:bg-gray-50'
             }`}
           >
@@ -166,30 +164,28 @@ export const SongRequestPage = () => {
         </div>
       </div>
 
-      {/* Request List */}
       <div className="max-w-md mx-auto px-4 space-y-4">
         {sortedRequests.map((req) => (
           <div key={req.id} className="bg-white rounded-2xl p-4 shadow-sm border border-pink-100 relative overflow-hidden group">
             {editingId === req.id ? (
-              // Edit Mode
               <div className="space-y-3">
                 <input
                   type="text"
                   value={editForm.songName || ''}
-                  onChange={(e) => setEditForm({...editForm, songName: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, songName: e.target.value })}
                   className="w-full text-lg font-bold text-gray-800 border-b border-pink-300 focus:outline-none"
                   placeholder="歌名"
                 />
                 <input
                   type="text"
                   value={editForm.artist || ''}
-                  onChange={(e) => setEditForm({...editForm, artist: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, artist: e.target.value })}
                   className="w-full text-xs text-gray-500 border-b border-pink-300 focus:outline-none"
                   placeholder="歌手"
                 />
                 <textarea
                   value={editForm.message || ''}
-                  onChange={(e) => setEditForm({...editForm, message: e.target.value})}
+                  onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
                   className="w-full bg-pink-50 rounded-xl p-3 text-sm text-gray-600 focus:outline-none resize-none"
                   placeholder="留言内容"
                 />
@@ -199,7 +195,6 @@ export const SongRequestPage = () => {
                 </div>
               </div>
             ) : (
-              // View Mode
               <>
                 <div className="flex justify-between items-start mb-2">
                   <div>
@@ -219,13 +214,13 @@ export const SongRequestPage = () => {
                 <div className="flex justify-end items-center text-gray-400 text-xs">
                   {isEditing ? (
                     <div className="flex space-x-3">
-                      <button 
+                      <button
                         onClick={() => startEdit(req)}
                         className="text-blue-400 hover:text-blue-600"
                       >
                         <Edit2 size={16} />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDelete(req.id)}
                         className="text-red-400 hover:text-red-600"
                       >
@@ -233,7 +228,7 @@ export const SongRequestPage = () => {
                       </button>
                     </div>
                   ) : (
-                    <button 
+                    <button
                       onClick={() => likeRequest(req.id)}
                       className="flex items-center space-x-1 hover:text-pink-500 transition-colors group"
                     >
@@ -246,35 +241,31 @@ export const SongRequestPage = () => {
             )}
           </div>
         ))}
-        
-        {/* Bottom Spacer for FAB */}
-        <div className="h-20"></div>
+
+        <div className="h-36"></div>
       </div>
 
-      {/* Bottom Fixed Action Button - Only show when NOT in editing mode */}
       {!isEditing && (
-        <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md pb-6 pt-4 px-4 bg-gradient-to-t from-white via-white to-transparent z-50">
+        <div className="fixed left-1/2 -translate-x-1/2 w-full max-w-md px-4 pt-4 pb-3 bg-gradient-to-t from-white via-white to-transparent z-40 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)]">
           <button
             onClick={() => setShowForm(true)}
             className="w-full h-12 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full text-white font-bold shadow-lg shadow-pink-500/30 flex items-center justify-center hover:scale-[1.02] active:scale-95 transition-all"
           >
-            <Plus size={20} className="mr-2" />
-            + 参与点歌
+            参与点歌
           </button>
         </div>
       )}
 
-      {/* Request Form Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
           <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300">
             <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
               <Music className="mr-2 text-pink-500" /> 我要点歌
             </h2>
-            
+
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">想听什么歌？ <span className="text-red-500">*</span></label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">想听什么歌？<span className="text-red-500">*</span></label>
                 <input
                   autoFocus
                   type="text"
@@ -285,9 +276,9 @@ export const SongRequestPage = () => {
                   className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-100 transition-all"
                 />
               </div>
-              
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">歌手 (选填)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">歌手（选填）</label>
                 <input
                   type="text"
                   placeholder="歌手名"
@@ -298,7 +289,7 @@ export const SongRequestPage = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">想说的话 (选填)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">想说的话（选填）</label>
                 <textarea
                   rows={3}
                   placeholder="写下你的心情或祝福..."

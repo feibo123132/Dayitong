@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import type { HistoryRecord } from '../types/history';
+import { db, ensureAuth } from '../lib/cloudbase';
 
 export type { HistoryRecord };
 
 export interface GuessUser {
-  id: string;
+  id: string; // Mapped from _id
   name: string;
   count: number; // 答对数
   participationCount: number; // 参与次数
@@ -15,10 +16,13 @@ export interface GuessUser {
 
 interface GuessMusicState {
   users: GuessUser[];
-  addUser: (name: string, count: number, participationCount: number) => void;
-  updateUser: (id: string, name: string, count: number, participationCount: number) => void;
-  deleteUser: (id: string) => void;
-  updateUserHistory: (userId: string, historyId: string, data: Partial<HistoryRecord>) => void;
+  isLoading: boolean;
+  error: string | null;
+  fetchUsers: () => Promise<void>;
+  addUser: (name: string, count: number, participationCount: number) => Promise<void>;
+  updateUser: (id: string, name: string, count: number, participationCount: number) => Promise<void>;
+  deleteUser: (id: string) => Promise<void>;
+  updateUserHistory: (userId: string, historyId: string, data: Partial<HistoryRecord>) => Promise<void>;
 }
 
 // 每次参与答题总数固定为 4 首
@@ -63,104 +67,110 @@ const sortAndRankUsers = (users: GuessUser[]): GuessUser[] => {
   }));
 };
 
-const INITIAL_USERS: GuessUser[] = [
-  { id: '1', name: 'JIEYOU', count: 30, participationCount: 10, rate: '75%', rank: 1, history: [] },
-  { id: '2', name: '小橘同学', count: 28, participationCount: 8, rate: '88%', rank: 2, history: [] },
-  { id: '3', name: '吉他手阿泽', count: 25, participationCount: 7, rate: '89%', rank: 3, history: [] },
-  { id: '4', name: '听歌达人小夏', count: 22, participationCount: 6, rate: '92%', rank: 4, history: [] },
-  { id: '5', name: '校园歌神', count: 20, participationCount: 6, rate: '83%', rank: 5, history: [] },
-].map(user => {
-  // Merge mock history if available
-  const history = MOCK_HISTORY_DATA[user.id] || [];
-  // Recalculate stats based on history if history exists, otherwise keep initial stats (as fallback/hybrid)
-  // For consistency as requested, let's recalculate if history exists.
-  // However, initial stats might be higher than history because history is partial mock.
-  // To strictly follow "keep consistent", we should ideally use history to derive stats.
-  // But since we only have partial mock history, let's just attach history for now
-  // and ensure future updates sync them.
+const INITIAL_USERS: Omit<GuessUser, 'id'>[] = [
+  { name: 'JIEYOU', count: 30, participationCount: 10, rate: '75%', rank: 1, history: [] },
+  { name: '小橘同学', count: 28, participationCount: 8, rate: '88%', rank: 2, history: [] },
+  { name: '吉他手阿泽', count: 25, participationCount: 7, rate: '89%', rank: 3, history: [] },
+  { name: '听歌达人小夏', count: 22, participationCount: 6, rate: '92%', rank: 4, history: [] },
+  { name: '校园歌神', count: 20, participationCount: 6, rate: '83%', rank: 5, history: [] },
+].map((user, index) => {
+  // Map mock history (using index + 1 as original ID logic)
+  const originalId = (index + 1).toString();
+  const history = MOCK_HISTORY_DATA[originalId] || [];
   return { ...user, history };
 });
 
-export const useGuessMusicStore = create<GuessMusicState>((set) => ({
-  users: INITIAL_USERS,
+export const useGuessMusicStore = create<GuessMusicState>((set, get) => ({
+  users: [],
+  isLoading: false,
+  error: null,
 
-  addUser: (name, count, participationCount) => set((state) => {
-    const newUser: GuessUser = {
-      id: `g${Date.now()}`,
-      name,
-      count,
-      participationCount,
-      rate: calculateRate(count, participationCount),
-      rank: 0,
-      history: []
-    };
-    
-    return { users: sortAndRankUsers([...state.users, newUser]) };
-  }),
+  fetchUsers: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      await ensureAuth();
+      const res = await db.collection('Dayitong_guess_users').get();
+      
+      let users = res.data.map((u: any) => ({ ...u, id: u._id })) as GuessUser[];
 
-  updateUser: (id, name, count, participationCount) => set((state) => {
-    const updatedUsers = state.users.map(user => {
-      if (user.id === id) {
-        return {
-          ...user,
-          name,
-          count,
-          participationCount,
-          rate: calculateRate(count, participationCount),
-        };
+      // Initialize with mock data if empty
+      if (users.length === 0) {
+        console.log('Initializing guess_users with mock data...');
+        const addPromises = INITIAL_USERS.map(user => db.collection('Dayitong_guess_users').add(user));
+        await Promise.all(addPromises);
+        // Fetch again
+        const newRes = await db.collection('Dayitong_guess_users').get();
+        users = newRes.data.map((u: any) => ({ ...u, id: u._id })) as GuessUser[];
       }
-      return user;
-    });
 
-    return { users: sortAndRankUsers(updatedUsers) };
-  }),
+      const sortedUsers = sortAndRankUsers(users);
+      set({ users: sortedUsers, isLoading: false });
+    } catch (err: any) {
+      console.error('Fetch users failed:', err);
+      set({ error: err.message, isLoading: false });
+    }
+  },
 
-  deleteUser: (id) => set((state) => {
-    const filteredUsers = state.users.filter(user => user.id !== id);
-    return { users: sortAndRankUsers(filteredUsers) };
-  }),
+  addUser: async (name, count, participationCount) => {
+    try {
+      await ensureAuth();
+      const newUser = {
+        name,
+        count,
+        participationCount,
+        rate: calculateRate(count, participationCount),
+        rank: 0,
+        history: []
+      };
+      await db.collection('Dayitong_guess_users').add(newUser);
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Add user failed:', err);
+    }
+  },
 
-  updateUserHistory: (userId, historyId, data) => set((state) => {
-    const updatedUsers = state.users.map(user => {
-      if (user.id === userId) {
-        const updatedHistory = user.history.map(record => 
-          record.id === historyId ? { ...record, ...data } : record
-        );
-        
-        // Recalculate totals based on history
-        // Note: For users with partial history (like INITIAL_USERS), this might cause a drop in stats
-        // if we only count history. But the user asked for consistency.
-        // To be safe for this demo, let's only recalculate based on history if history covers all participation.
-        // OR: simpler approach: just update the stats based on the diff, or fully recalculate if we assume history is the source of truth.
-        // Given the requirement "图1和图2的数据...要保持完全一致", we should treat history as the source of truth for stats.
-        // But since we don't have full history for everyone, let's just recalculate from updatedHistory for now.
-        // Wait, if we use partial history, the count will drop to 10 (from 30) for JIEYOU.
-        // That might be confusing.
-        // Let's assume the "stats" in store are the cache, and when we update history, we update the cache.
-        // But for initial data, we have a mismatch (30 vs 3 records * 4 = 12 max).
-        // Let's just update the stats based on the change for now to avoid data loss on UI.
-        
-        // BETTER APPROACH for this task:
-        // Since user wants editing, let's update the specific record, then re-sum everything?
-        // No, let's just update the totals by diffing old vs new record score.
-        const oldRecord = user.history.find(r => r.id === historyId);
-        let newCount = user.count;
-        if (oldRecord && data.score !== undefined) {
-           newCount = user.count - oldRecord.score + data.score;
-        }
-        
-        // participation count doesn't change on edit, unless we add/delete history (not implemented yet).
+  updateUser: async (id, name, count, participationCount) => {
+    try {
+      await ensureAuth();
+      const updates = {
+        name,
+        count,
+        participationCount,
+        rate: calculateRate(count, participationCount)
+      };
+      await db.collection('Dayitong_guess_users').doc(id).update(updates);
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Update user failed:', err);
+    }
+  },
 
-        return {
-          ...user,
-          count: newCount,
-          rate: calculateRate(newCount, user.participationCount),
-          history: updatedHistory
-        };
-      }
-      return user;
-    });
+  deleteUser: async (id) => {
+    try {
+      await ensureAuth();
+      await db.collection('Dayitong_guess_users').doc(id).remove();
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Delete user failed:', err);
+    }
+  },
 
-    return { users: sortAndRankUsers(updatedUsers) };
-  }),
+  updateUserHistory: async (userId, historyId, data) => {
+    try {
+      await ensureAuth();
+      const user = get().users.find(u => u.id === userId);
+      if (!user) return;
+
+      const newHistory = user.history.map(h => 
+        h.id === historyId ? { ...h, ...data } : h
+      );
+
+      await db.collection('Dayitong_guess_users').doc(userId).update({
+        history: newHistory
+      });
+      get().fetchUsers();
+    } catch (err) {
+      console.error('Update history failed:', err);
+    }
+  }
 }));
