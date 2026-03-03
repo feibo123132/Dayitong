@@ -5,12 +5,16 @@ import { useGuessMusicStore } from '../store/useGuessMusicStore';
 import { useRankingStore } from '../store/useRankingStore';
 import { useSongRequestStore } from '../store/useSongRequestStore';
 import { useAuthStore } from '../store/useAuthStore';
+import { useProfileStore } from '../store/useProfileStore';
 
 let hasInitializedCloudData = false;
 
 export const MainLayout = () => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
+  const user = useAuthStore((state) => state.user);
+  const userUid = user?.uid;
+  const isAnonymousUser = Boolean(user?.isAnonymous);
 
   // Guard against duplicate init in React StrictMode (dev).
   useEffect(() => {
@@ -27,6 +31,14 @@ export const MainLayout = () => {
       ]);
     });
   }, []);
+
+  useEffect(() => {
+    if (!userUid || isAnonymousUser) {
+      useProfileStore.getState().resetProfile();
+      return;
+    }
+    void useProfileStore.getState().loadProfile(userUid);
+  }, [isAnonymousUser, userUid]);
 
   return (
     <div className="min-h-screen bg-jieyou-bg pb-20">

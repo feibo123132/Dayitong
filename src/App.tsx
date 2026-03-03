@@ -1,22 +1,21 @@
-import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
+﻿import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
+import { ActivityPage } from './pages/ActivityPage';
+import { AppStorePage } from './pages/AppStorePage';
+import { GuessMusicPage } from './pages/GuessMusicPage';
+import { GuessUserHistoryPage } from './pages/GuessUserHistoryPage';
 import { Home } from './pages/Home';
+import { LocationSelectPage } from './pages/LocationSelectPage';
+import { LoginPage } from './pages/LoginPage';
 import { MusicPage } from './pages/MusicPage';
-import { UserPage } from './pages/UserPage';
+import { ProfileFieldEditPage } from './pages/ProfileFieldEditPage';
+import { ProfileInfoPage } from './pages/ProfileInfoPage';
 import { RankingPage } from './pages/RankingPage';
 import { RankingUserDetailPage } from './pages/RankingUserDetailPage';
-import { GuessMusicPage } from './pages/GuessMusicPage';
-import { LocationSelectPage } from './pages/LocationSelectPage';
-import { GuessUserHistoryPage } from './pages/GuessUserHistoryPage';
-import { AppStorePage } from './pages/AppStorePage';
-import { SongRequestPage } from './pages/SongRequestPage';
 import { RoadshowPage } from './pages/RoadshowPage';
-import { LoginPage } from './pages/LoginPage';
-import { ProfileInfoPage } from './pages/ProfileInfoPage';
 import { SettingsPage } from './pages/SettingsPage';
-
-// Placeholder for Activity Page
-const ActivityPage = () => <div className="p-4 text-center text-gray-500">活动页面正在开发中...</div>;
+import { SongRequestPage } from './pages/SongRequestPage';
+import { UserPage } from './pages/UserPage';
 
 function App() {
   return (
@@ -36,9 +35,9 @@ function App() {
           <Route path="app-store" element={<AppStorePage />} />
           <Route path="profile" element={<UserPage />} />
           <Route path="profile-info" element={<ProfileInfoPage />} />
+          <Route path="profile-info/edit/:field" element={<ProfileFieldEditPage />} />
           <Route path="login" element={<LoginPage />} />
           <Route path="settings" element={<SettingsPage />} />
-          {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

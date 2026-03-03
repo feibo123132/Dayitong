@@ -13,6 +13,7 @@
 import type { ComponentType } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
+import { useProfileStore } from '../store/useProfileStore';
 
 type MenuItem = {
   id: string;
@@ -102,16 +103,21 @@ const MENU_GROUPS: MenuItem[][] = [
 export const UserPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const { name, avatarUrl } = useProfileStore();
 
   return (
     <div className="-mx-4 -mt-4 min-h-screen bg-[#f1f2f5] pb-24">
       <section className="bg-white px-5 py-6 border-b border-gray-100">
         <div className="flex items-center">
           <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-teal-200 to-cyan-300 flex items-center justify-center shadow-sm">
-            <UserRound size={30} className="text-white" />
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="头像" className="w-full h-full rounded-xl object-cover" />
+            ) : (
+              <UserRound size={30} className="text-white" />
+            )}
           </div>
           <div className="ml-4 flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-gray-900">JIEYOU</h1>
+            <h1 className="text-xl font-bold text-gray-900">{name}</h1>
             <p className="text-sm text-gray-500 mt-1 truncate">{user?.email || `ID: ${user?.uid?.slice(0, 8) || 'Unknown'}`}</p>
           </div>
           <button
