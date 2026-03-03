@@ -1,9 +1,11 @@
-import { ArrowLeft, Calendar, Clock3, Gift, MapPin, Sparkles } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock3, Gift, MapPin, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useActivityStore } from '../store/useActivityStore';
 import { FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus, type ActivityTask } from './activityData';
+
+const LANTERN_FESTIVAL_ID = 'lantern-festival-2026';
 
 export const ActivityDetailPage = () => {
   const { festivalId } = useParams<{ festivalId: string }>();
@@ -11,6 +13,8 @@ export const ActivityDetailPage = () => {
   const user = useAuthStore((state) => state.user);
   const { completedTaskIds, loadProgress, resetProgress, completeTask, isLoading, error } = useActivityStore();
   const [now, setNow] = useState(() => Date.now());
+  const [isTaskPanelCollapsed, setIsTaskPanelCollapsed] = useState(() => festivalId === LANTERN_FESTIVAL_ID);
+  const [isRewardsCollapsed, setIsRewardsCollapsed] = useState(() => festivalId === LANTERN_FESTIVAL_ID);
 
   const userUid = user?.uid ?? null;
   const festival = FESTIVAL_TEMPLATES.find((item) => item.id === festivalId);
@@ -35,11 +39,11 @@ export const ActivityDetailPage = () => {
     return (
       <div className="-mx-4 -mt-4 min-h-screen bg-[#f1f2f5] pb-24 pt-14">
         <header className="fixed top-0 left-0 right-0 z-50">
-          <div className="max-w-md mx-auto bg-white/80 backdrop-blur-md px-4 py-3 flex items-center border-b border-gray-100">
+          <div className="mx-auto flex max-w-md items-center border-b border-gray-100 bg-white/80 px-4 py-3 backdrop-blur-md">
             <button
               type="button"
               onClick={() => navigate('/activity')}
-              className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-600 hover:bg-gray-100 transition-colors"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-gray-100"
               aria-label="返回活动页"
             >
               <ArrowLeft size={20} />
@@ -57,6 +61,7 @@ export const ActivityDetailPage = () => {
   const doneCount = completedTaskIds.length;
   const totalCount = festival.tasks.length;
   const progressPercent = Math.round((doneCount / totalCount) * 100);
+
   const hasBackgroundImage = Boolean(festival.backgroundImage);
   const heroTitleClass = hasBackgroundImage
     ? 'text-white [text-shadow:0_2px_6px_rgba(0,0,0,0.45)]'
@@ -65,7 +70,7 @@ export const ActivityDetailPage = () => {
     ? 'text-white/90 [text-shadow:0_1px_4px_rgba(0,0,0,0.35)]'
     : 'text-slate-500';
   const heroSubtitleBadgeClass = hasBackgroundImage
-    ? 'bg-black/20 text-white/90 border border-white/25 [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]'
+    ? 'border border-white/25 bg-black/20 text-white/90 [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]'
     : festival.theme.subtitleBadgeClass;
   const heroProgressLabelClass = hasBackgroundImage
     ? 'text-white/85 [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]'
@@ -89,14 +94,30 @@ export const ActivityDetailPage = () => {
     await completeTask(task.id, task.points);
   };
 
+  const handleTaskAction = async (task: ActivityTask) => {
+    if (task.id === 'checkin') {
+      navigate(`/activity/${festival.id}/checkin`);
+      return;
+    }
+    await handleTaskClick(task);
+  };
+
+  const getTaskActionText = (task: ActivityTask, isDone: boolean) => {
+    if (task.id === 'checkin') return isDone ? '已签到' : '进入互动';
+    if (isDone) return '已完成';
+    if (status === 'upcoming') return '未开始';
+    if (status === 'ended') return '已结束';
+    return '立即完成';
+  };
+
   return (
     <div className="-mx-4 -mt-4 min-h-screen bg-[#f1f2f5] pb-24 pt-14">
       <header className="fixed top-0 left-0 right-0 z-50">
-        <div className="max-w-md mx-auto bg-white/80 backdrop-blur-md px-4 py-3 flex items-center border-b border-gray-100">
+        <div className="mx-auto flex max-w-md items-center border-b border-gray-100 bg-white/80 px-4 py-3 backdrop-blur-md">
           <button
             type="button"
             onClick={() => navigate('/activity')}
-            className="w-9 h-9 rounded-lg flex items-center justify-center text-slate-600 hover:bg-gray-100 transition-colors"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-gray-100"
             aria-label="返回活动页"
           >
             <ArrowLeft size={20} />
@@ -106,24 +127,24 @@ export const ActivityDetailPage = () => {
       </header>
 
       <section className="px-4 pt-4">
-        <div className={`relative overflow-hidden rounded-3xl p-5 shadow-sm border ${festival.theme.heroCardClass}`}>
+        <div className={`relative overflow-hidden rounded-3xl border p-5 shadow-sm ${festival.theme.heroCardClass}`}>
           {festival.backgroundImage ? (
             <>
               <img
                 src={`${import.meta.env.BASE_URL}${festival.backgroundImage}`}
                 alt=""
                 aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+                className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-black/55 via-black/35 to-black/15 pointer-events-none" />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/55 via-black/35 to-black/15" />
             </>
           ) : null}
 
-          <div className="absolute -top-2 right-3 text-2xl opacity-80 z-10">{festival.decoA}</div>
-          <div className="absolute top-8 right-12 text-lg opacity-70 z-10">{festival.decoB}</div>
+          <div className="absolute -top-2 right-3 z-10 text-2xl opacity-80">{festival.decoA}</div>
+          <div className="absolute right-12 top-8 z-10 text-lg opacity-70">{festival.decoB}</div>
 
           <div className="relative z-20">
-            <div className={`inline-flex items-center rounded-full text-[11px] font-semibold px-2 py-1 mb-2 ${heroSubtitleBadgeClass}`}>
+            <div className={`mb-2 inline-flex items-center rounded-full px-2 py-1 text-[11px] font-semibold ${heroSubtitleBadgeClass}`}>
               <Sparkles size={12} className="mr-1" /> {festival.subtitle}
             </div>
 
@@ -145,84 +166,147 @@ export const ActivityDetailPage = () => {
                   已完成 {doneCount}/{totalCount} · {progressPercent}%
                 </div>
               </div>
-              <div className={`px-3 py-1 rounded-full text-xs font-bold flex items-center ${festival.theme.countdownClass} ${heroMetaClass}`}>
+              <div className={`flex items-center rounded-full px-3 py-1 text-xs font-bold ${festival.theme.countdownClass} ${heroMetaClass}`}>
                 <Clock3 size={12} className="mr-1" /> {countdownText}
               </div>
             </div>
 
-            <div className="mt-2 h-2 rounded-full bg-white/80 overflow-hidden">
+            <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/80">
               <div className={`h-full rounded-full transition-all ${festival.theme.progressBarClass}`} style={{ width: `${progressPercent}%` }} />
             </div>
           </div>
         </div>
       </section>
 
-      <section className="px-4 mt-3">
-        <div className="flex items-center justify-between mb-2 px-1">
+      <section className="mt-3 px-4">
+        <div className="mb-2 flex items-center justify-between px-1">
           <h2 className="text-[17px] font-semibold text-slate-800">任务面板</h2>
-          <span className="text-xs text-slate-400">活动期内每项仅可完成一次</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-400">活动期内每项仅可完成一次</span>
+            <button
+              type="button"
+              onClick={() => setIsTaskPanelCollapsed((prev) => !prev)}
+              className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+              aria-expanded={!isTaskPanelCollapsed}
+            >
+              {isTaskPanelCollapsed ? '展开' : '折叠'}
+              {isTaskPanelCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            </button>
+          </div>
         </div>
 
         <div className="space-y-3">
           {festival.tasks.map((task) => {
             const Icon = task.icon;
             const isDone = completedTaskIds.includes(task.id);
-            const disabled = status !== 'active' || isDone;
+            const isCheckinTask = task.id === 'checkin';
+            const disabled = isCheckinTask ? false : status !== 'active' || isDone;
+            const actionText = getTaskActionText(task, isDone);
+            const actionButtonClass = isDone
+              ? 'border border-emerald-100 bg-emerald-50 text-emerald-600 cursor-pointer'
+              : isCheckinTask
+                ? 'bg-slate-900 text-white hover:bg-slate-800 cursor-pointer'
+                : status === 'active'
+                  ? `${festival.theme.actionButtonClass} cursor-pointer`
+                  : 'cursor-not-allowed bg-gray-100 text-gray-400';
 
             return (
-              <div key={task.id} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm">
-                <div className="flex items-start gap-3">
-                  <span className={`w-10 h-10 rounded-xl ${task.bgColor} flex items-center justify-center`}>
+              <div
+                key={task.id}
+                className={`rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 ${
+                  isTaskPanelCollapsed ? 'p-3' : 'p-4'
+                } ${isCheckinTask ? 'cursor-pointer hover:border-slate-300' : ''}`}
+                onClick={isCheckinTask ? () => navigate(`/activity/${festival.id}/checkin`) : undefined}
+                onKeyDown={
+                  isCheckinTask
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          navigate(`/activity/${festival.id}/checkin`);
+                        }
+                      }
+                    : undefined
+                }
+                role={isCheckinTask ? 'button' : undefined}
+                tabIndex={isCheckinTask ? 0 : undefined}
+              >
+                <div className={`flex gap-3 ${isTaskPanelCollapsed ? 'items-center' : 'items-start'}`}>
+                  <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${task.bgColor}`}>
                     <Icon size={18} className={task.iconColor} />
                   </span>
 
-                  <div className="flex-1 min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-[17px] font-semibold text-slate-800 truncate">{task.title}</h3>
-                      <span className={`text-xs px-2 py-1 rounded-full font-medium shrink-0 ${festival.theme.scoreTagClass}`}>
+                      <h3 className="truncate text-[17px] font-semibold text-slate-800">{task.title}</h3>
+                      <span className={`shrink-0 rounded-full px-2 py-1 text-xs font-medium ${festival.theme.scoreTagClass}`}>
                         +{task.points} 分
                       </span>
                     </div>
 
-                    <p className="text-sm text-slate-500 mt-1">{task.description}</p>
-                    <p className="text-xs text-slate-400 mt-2">解锁标记：{task.badge}</p>
+                    {!isTaskPanelCollapsed ? (
+                      <>
+                        <p className="mt-1 text-sm text-slate-500">{task.description}</p>
+                        <p className="mt-2 text-xs text-slate-400">解锁标记：{task.badge}</p>
+                      </>
+                    ) : (
+                      <p className="mt-1 truncate text-xs text-slate-400">解锁标记：{task.badge}</p>
+                    )}
                   </div>
+
+                  {isTaskPanelCollapsed ? (
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      onClick={() => void handleTaskAction(task)}
+                      className={`h-8 shrink-0 rounded-lg px-3 text-xs font-semibold transition-colors ${actionButtonClass}`}
+                    >
+                      {actionText}
+                    </button>
+                  ) : null}
                 </div>
 
-                <button
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => void handleTaskClick(task)}
-                  className={`mt-3 w-full h-10 rounded-xl text-sm font-semibold transition-colors ${
-                    isDone
-                      ? 'bg-emerald-50 text-emerald-600 border border-emerald-100'
-                      : status === 'active'
-                        ? festival.theme.actionButtonClass
-                        : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  }`}
-                >
-                  {isDone ? '已完成' : status === 'upcoming' ? '未开始' : status === 'ended' ? '已结束' : '立即完成'}
-                </button>
+                {!isTaskPanelCollapsed ? (
+                  <button
+                    type="button"
+                    disabled={disabled}
+                    onClick={() => void handleTaskAction(task)}
+                    className={`mt-3 h-10 w-full rounded-xl text-sm font-semibold transition-colors ${actionButtonClass}`}
+                  >
+                    {actionText}
+                  </button>
+                ) : null}
               </div>
             );
           })}
         </div>
       </section>
 
-      <section className="px-4 mt-4">
-        <h2 className="text-[17px] font-semibold text-slate-800 mb-2 px-1">活动奖励</h2>
-        <div className="bg-white border border-gray-100 rounded-2xl p-4 space-y-3 shadow-sm">
+      <section className="mt-4 px-4">
+        <div className="mb-2 flex items-center justify-between px-1">
+          <h2 className="text-[17px] font-semibold text-slate-800">活动奖励</h2>
+          <button
+            type="button"
+            onClick={() => setIsRewardsCollapsed((prev) => !prev)}
+            className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
+            aria-expanded={!isRewardsCollapsed}
+          >
+            {isRewardsCollapsed ? '展开' : '折叠'}
+            {isRewardsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+          </button>
+        </div>
+
+        <div className="space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
           {festival.rewards.map((reward) => {
             const unlocked = doneCount >= reward.threshold;
             return (
               <div
                 key={reward.id}
-                className={`rounded-xl border px-3 py-3 flex items-center gap-3 ${
-                  unlocked ? festival.theme.rewardUnlockedCardClass : 'border-gray-100 bg-gray-50/60'
-                }`}
+                className={`flex items-center gap-3 rounded-xl border px-3 transition-all duration-300 ${
+                  isRewardsCollapsed ? 'py-2' : 'py-3'
+                } ${unlocked ? festival.theme.rewardUnlockedCardClass : 'border-gray-100 bg-gray-50/60'}`}
               >
                 <span
-                  className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                  className={`flex h-8 w-8 items-center justify-center rounded-full ${
                     unlocked ? festival.theme.rewardUnlockedIconClass : 'bg-gray-100 text-gray-400'
                   }`}
                 >
@@ -232,7 +316,7 @@ export const ActivityDetailPage = () => {
                   <div className={`text-sm font-semibold ${unlocked ? festival.theme.rewardUnlockedTitleClass : 'text-slate-500'}`}>
                     {reward.title}
                   </div>
-                  <div className="text-xs text-slate-400 mt-0.5">{reward.description}</div>
+                  {!isRewardsCollapsed ? <div className="mt-0.5 text-xs text-slate-400">{reward.description}</div> : null}
                 </div>
                 <span className={`text-xs font-semibold ${unlocked ? festival.theme.rewardUnlockedStatusClass : 'text-slate-400'}`}>
                   {unlocked ? '已解锁' : '待解锁'}

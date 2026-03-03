@@ -10,6 +10,7 @@ const LOCATIONS = [
 
 export const LocationSelectPage = () => {
   const navigate = useNavigate();
+  const bannerImageUrl = `${import.meta.env.BASE_URL}images/roadshow/location-select-banner.png`;
 
   const handleLocationClick = (location: typeof LOCATIONS[0]) => {
     if (location.active) {
@@ -21,7 +22,11 @@ export const LocationSelectPage = () => {
     <div className="min-h-screen bg-teal-50/50">
       {/* Top Banner */}
       <div className="relative h-48 w-full bg-gradient-to-r from-jieyou-mint to-teal-400 overflow-hidden rounded-b-[2rem] shadow-md">
-        <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center"></div>
+        <img
+          src={bannerImageUrl}
+          alt="路演地点背景图"
+          className="absolute inset-0 w-full h-full object-cover opacity-35"
+        />
         
         <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
           <h1 className="text-3xl font-bold text-white drop-shadow-md tracking-wide">选择路演地点</h1>

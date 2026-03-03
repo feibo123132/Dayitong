@@ -1,5 +1,6 @@
-﻿import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ActivityDetailPage } from './pages/ActivityDetailPage';
+import { ActivityCheckinPage } from './pages/ActivityCheckinPage';
 import { MainLayout } from './layouts/MainLayout';
 import { ActivityPage } from './pages/ActivityPage';
 import { AppStorePage } from './pages/AppStorePage';
@@ -26,6 +27,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="activity" element={<ActivityPage />} />
           <Route path="activity/:festivalId" element={<ActivityDetailPage />} />
+          <Route path="activity/:festivalId/checkin" element={<ActivityCheckinPage />} />
           <Route path="music" element={<MusicPage />} />
           <Route path="ranking" element={<RankingPage />} />
           <Route path="ranking/:userId" element={<RankingUserDetailPage />} />
