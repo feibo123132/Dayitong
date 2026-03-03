@@ -1,12 +1,14 @@
 ﻿import { ArrowLeft, ChevronRight, UserRound } from 'lucide-react';
-import { useRef, type ChangeEvent } from 'react';
+import { useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ImagePreviewModal } from '../components/ImagePreviewModal';
 import { useProfileStore } from '../store/useProfileStore';
 
 export const ProfileInfoPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { name, gender, hobby, signature, avatarUrl, updateAvatar } = useProfileStore();
+  const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
 
   const profileItems = [
     { id: 'name', label: '用户名', value: name, editable: true },
@@ -57,13 +59,21 @@ export const ProfileInfoPage = () => {
         >
           <span className="text-[17px] text-gray-900">头像</span>
           <span className="ml-auto flex items-center gap-3">
-            <span className="w-10 h-10 rounded-md bg-gradient-to-br from-teal-200 to-cyan-300 flex items-center justify-center shadow-sm overflow-hidden">
+            <button
+              type="button"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (avatarUrl) setIsAvatarPreviewOpen(true);
+              }}
+              className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-200 to-cyan-300 flex items-center justify-center shadow-sm overflow-hidden border border-white/70 cursor-pointer"
+              aria-label="预览头像"
+            >
               {avatarUrl ? (
-                <img src={avatarUrl} alt="头像" className="w-full h-full object-cover" />
+                <img src={avatarUrl} alt="头像" className="w-full h-full object-cover object-center" />
               ) : (
-                <UserRound size={20} className="text-white" />
+                <UserRound size={24} className="text-white" />
               )}
-            </span>
+            </button>
             <ChevronRight size={18} className="text-gray-300" />
           </span>
         </button>
@@ -91,6 +101,13 @@ export const ProfileInfoPage = () => {
           );
         })}
       </section>
+
+      <ImagePreviewModal
+        open={isAvatarPreviewOpen}
+        src={avatarUrl}
+        alt={`${name} 的头像`}
+        onClose={() => setIsAvatarPreviewOpen(false)}
+      />
     </div>
   );
 };

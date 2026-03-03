@@ -11,7 +11,9 @@
   UserRound,
 } from 'lucide-react';
 import type { ComponentType } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ImagePreviewModal } from '../components/ImagePreviewModal';
 import { useAuthStore } from '../store/useAuthStore';
 import { useProfileStore } from '../store/useProfileStore';
 
@@ -104,18 +106,24 @@ export const UserPage = () => {
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { name, avatarUrl } = useProfileStore();
+  const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
 
   return (
     <div className="-mx-4 -mt-4 min-h-screen bg-[#f1f2f5] pb-24">
       <section className="bg-white px-5 py-6 border-b border-gray-100">
         <div className="flex items-center">
-          <div className="w-16 h-16 rounded-xl bg-gradient-to-br from-teal-200 to-cyan-300 flex items-center justify-center shadow-sm">
+          <button
+            type="button"
+            onClick={() => avatarUrl && setIsAvatarPreviewOpen(true)}
+            className="w-20 h-20 min-w-20 overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br from-teal-200 to-cyan-300 flex items-center justify-center shadow-sm cursor-pointer"
+            aria-label="预览头像"
+          >
             {avatarUrl ? (
-              <img src={avatarUrl} alt="头像" className="w-full h-full rounded-xl object-cover" />
+              <img src={avatarUrl} alt="头像" className="w-full h-full rounded-2xl object-cover object-center" />
             ) : (
-              <UserRound size={30} className="text-white" />
+              <UserRound size={34} className="text-white" />
             )}
-          </div>
+          </button>
           <div className="ml-4 flex-1 min-w-0">
             <h1 className="text-xl font-bold text-gray-900">{name}</h1>
             <p className="text-sm text-gray-500 mt-1 truncate">{user?.email || `ID: ${user?.uid?.slice(0, 8) || 'Unknown'}`}</p>
@@ -158,6 +166,13 @@ export const UserPage = () => {
           </section>
         ))}
       </div>
+
+      <ImagePreviewModal
+        open={isAvatarPreviewOpen}
+        src={avatarUrl}
+        alt={`${name} 的头像`}
+        onClose={() => setIsAvatarPreviewOpen(false)}
+      />
     </div>
   );
 };

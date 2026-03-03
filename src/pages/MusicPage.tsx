@@ -15,7 +15,9 @@
   UserRound,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ImagePreviewModal } from '../components/ImagePreviewModal';
 import { useGuessMusicStore } from '../store/useGuessMusicStore';
 import { useProfileStore } from '../store/useProfileStore';
 import { useRankingStore } from '../store/useRankingStore';
@@ -46,6 +48,7 @@ const FEATURED_PLAYLISTS = [
 export const MusicPage = () => {
   const navigate = useNavigate();
   const { name, avatarUrl, signature } = useProfileStore();
+  const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
   const requests = useSongRequestStore((state) => state.requests);
   const guessUsers = useGuessMusicStore((state) => state.users);
   const rankingUsers = useRankingStore((state) => state.users);
@@ -135,15 +138,20 @@ export const MusicPage = () => {
 
         <div className="mt-4 rounded-3xl bg-white/85 p-4 shadow-[0_8px_20px_rgba(31,70,114,0.08)] backdrop-blur">
           <div className="flex items-center">
-            <div className="h-16 w-16 overflow-hidden rounded-2xl bg-gradient-to-br from-cyan-200 to-blue-300 shadow-sm">
+            <button
+              type="button"
+              onClick={() => avatarUrl && setIsAvatarPreviewOpen(true)}
+              className="h-20 w-20 min-w-20 overflow-hidden rounded-2xl border border-white/70 bg-gradient-to-br from-cyan-200 to-blue-300 shadow-sm cursor-pointer"
+              aria-label="预览头像"
+            >
               {avatarUrl ? (
-                <img src={avatarUrl} alt="头像" className="h-full w-full object-cover" />
+                <img src={avatarUrl} alt="头像" className="h-full w-full object-cover object-center" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
                   <UserRound size={30} className="text-white" />
                 </div>
               )}
-            </div>
+            </button>
             <div className="ml-3 min-w-0 flex-1">
               <p className="truncate text-lg font-bold text-slate-900">{name}</p>
               <p className="mt-1 truncate text-xs text-slate-500">{signature}</p>
@@ -288,6 +296,13 @@ export const MusicPage = () => {
           </div>
         </div>
       </section>
+
+      <ImagePreviewModal
+        open={isAvatarPreviewOpen}
+        src={avatarUrl}
+        alt={`${name} 的头像`}
+        onClose={() => setIsAvatarPreviewOpen(false)}
+      />
     </div>
   );
 };

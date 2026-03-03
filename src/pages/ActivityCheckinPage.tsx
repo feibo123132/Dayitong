@@ -1,4 +1,4 @@
-import { ArrowLeft, CheckCircle2, Clock3, PlayCircle, Sparkles, Upload, Video } from 'lucide-react';
+﻿import { ArrowLeft, CheckCircle2, Clock3, PlayCircle, Sparkles, Upload, Video } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useActivityStore } from '../store/useActivityStore';
