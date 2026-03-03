@@ -16,10 +16,6 @@ interface ActivityProgressDoc extends ActivityProgressFields {
   updatedAt: number;
 }
 
-interface DbListResponse<T> {
-  data: T[];
-}
-
 interface ActivityState extends ActivityProgressFields {
   currentUid: string | null;
   currentActivityId: string | null;
@@ -50,6 +46,12 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   return fallback;
 };
 
+const normalizeDbData = <T>(value: unknown): T[] => {
+  if (typeof value !== 'object' || value === null || !('data' in value)) return [];
+  const data = (value as { data?: unknown }).data;
+  return Array.isArray(data) ? (data as T[]) : [];
+};
+
 const sanitizeTaskIds = (value: unknown): ActivityTaskId[] => {
   if (!Array.isArray(value)) return [];
   const allowSet = new Set<ActivityTaskId>(['checkin', 'guess-song', 'festival-message']);
@@ -62,11 +64,12 @@ const upsertProgress = async (uid: string, activityId: string, progress: Activit
   await ensureAuth();
 
   const collection = getCollection();
-  const existing = (await collection.where({ uid, activityId }).limit(1).get()) as DbListResponse<ActivityProgressDoc>;
+  const existing = await collection.where({ uid, activityId }).limit(1).get();
+  const existingData = normalizeDbData<ActivityProgressDoc>(existing);
   const now = Date.now();
 
-  if (existing.data.length > 0) {
-    await collection.doc(existing.data[0]._id).update({
+  if (existingData.length > 0) {
+    await collection.doc(existingData[0]._id).update({
       ...progress,
       updatedAt: now,
     });
@@ -95,15 +98,16 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
     try {
       await ensureAuth();
       const collection = getCollection();
-      const res = (await collection.where({ uid, activityId }).limit(1).get()) as DbListResponse<ActivityProgressDoc>;
+      const res = await collection.where({ uid, activityId }).limit(1).get();
+      const data = normalizeDbData<ActivityProgressDoc>(res);
 
-      if (res.data.length === 0) {
+      if (data.length === 0) {
         await upsertProgress(uid, activityId, DEFAULT_PROGRESS);
         set({ ...DEFAULT_PROGRESS, isLoading: false });
         return;
       }
 
-      const doc = res.data[0];
+      const doc = data[0];
       set({
         completedTaskIds: sanitizeTaskIds(doc.completedTaskIds),
         score: typeof doc.score === 'number' ? doc.score : 0,
