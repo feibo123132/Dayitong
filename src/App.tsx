@@ -6,6 +6,7 @@ import { ActivityPage } from './pages/ActivityPage';
 import { AppStorePage } from './pages/AppStorePage';
 import { GuessMusicPage } from './pages/GuessMusicPage';
 import { GuessUserHistoryPage } from './pages/GuessUserHistoryPage';
+import { GuitarBeginnerPage } from './pages/GuitarBeginnerPage';
 import { Home } from './pages/Home';
 import { LocationSelectPage } from './pages/LocationSelectPage';
 import { LoginPage } from './pages/LoginPage';
@@ -37,6 +38,7 @@ function App() {
           <Route path="song-request" element={<SongRequestPage />} />
           <Route path="roadshow" element={<RoadshowPage />} />
           <Route path="app-store" element={<AppStorePage />} />
+          <Route path="guitar-beginner" element={<GuitarBeginnerPage />} />
           <Route path="profile" element={<UserPage />} />
           <Route path="profile-info" element={<ProfileInfoPage />} />
           <Route path="profile-info/edit/:field" element={<ProfileFieldEditPage />} />

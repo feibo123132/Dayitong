@@ -1,4 +1,4 @@
-import { Calendar, Check, Clock3, MapPin, Menu, Sparkles } from 'lucide-react';
+﻿import { Calendar, Check, ChevronDown, ChevronRight, Clock3, MapPin, Menu, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -55,6 +55,7 @@ export const ActivityPage = () => {
   const { completedTaskIds, loadProgress, resetProgress, isLoading, error } = useActivityStore();
   const [now, setNow] = useState(() => Date.now());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isFestivalMenuExpanded, setIsFestivalMenuExpanded] = useState(false);
   const [selectedFestivalId, setSelectedFestivalId] = useState(FESTIVAL_TEMPLATES[0].id);
   const [brokenCustomImageByFestival, setBrokenCustomImageByFestival] = useState<Record<string, boolean>>({});
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -129,6 +130,15 @@ export const ActivityPage = () => {
     setIsMenuOpen(false);
   };
 
+  const handleMenuToggle = () => {
+    if (!isMenuOpen) {
+      setIsFestivalMenuExpanded(false);
+      setIsMenuOpen(true);
+      return;
+    }
+    setIsMenuOpen(false);
+  };
+
   return (
     <div className="-mx-4 -mt-4 min-h-screen bg-[#f1f2f5] pb-24 pt-14">
       <header className="fixed top-0 left-0 right-0 z-50">
@@ -138,7 +148,7 @@ export const ActivityPage = () => {
           <div className="relative" ref={menuRef}>
             <button
               type="button"
-              onClick={() => setIsMenuOpen((current) => !current)}
+              onClick={handleMenuToggle}
               className="w-9 h-9 rounded-lg flex items-center justify-center text-jieyou-mint hover:bg-gray-100 transition-colors"
               aria-label="活动菜单"
             >
@@ -146,24 +156,36 @@ export const ActivityPage = () => {
             </button>
 
             {isMenuOpen ? (
-              <div className="absolute right-0 mt-2 w-44 rounded-xl border border-gray-100 bg-white shadow-lg p-2 z-20">
-                <p className="px-2 py-1 text-xs font-semibold text-slate-400">节日活动</p>
-                {FESTIVAL_TEMPLATES.map((item) => {
-                  const active = item.id === festival.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => handleFestivalSwitch(item.id)}
-                      className={`w-full mt-1 px-2 py-2 rounded-lg text-left text-sm flex items-center justify-between transition-colors ${
-                        active ? festival.theme.menuActiveClass : 'text-slate-700 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span>{item.menuLabel}</span>
-                      {active ? <Check size={14} /> : null}
-                    </button>
-                  );
-                })}
+              <div className="absolute right-0 mt-2 w-48 rounded-xl border border-gray-100 bg-white p-2 shadow-lg z-20">
+                <button
+                  type="button"
+                  onClick={() => setIsFestivalMenuExpanded((current) => !current)}
+                  className="w-full rounded-lg px-2 py-2 text-left text-sm text-slate-800 hover:bg-gray-50 transition-colors flex items-center justify-between"
+                >
+                  <span className="font-medium">节日活动</span>
+                  {isFestivalMenuExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                </button>
+
+                {isFestivalMenuExpanded ? (
+                  <div className="mt-1 pl-2 space-y-1">
+                    {FESTIVAL_TEMPLATES.map((item) => {
+                      const active = item.id === festival.id;
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          onClick={() => handleFestivalSwitch(item.id)}
+                          className={`w-full px-2 py-2 rounded-lg text-left text-sm flex items-center justify-between transition-colors ${
+                            active ? festival.theme.menuActiveClass : 'text-slate-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <span>{item.menuLabel}</span>
+                          {active ? <Check size={14} /> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -262,7 +284,7 @@ export const ActivityPage = () => {
             ) : (
               <img
                 src={customImageUrl}
-                alt="节日习俗四景图"
+                alt="节日习俗图"
                 className="w-full h-auto max-h-[420px] object-contain bg-slate-50"
                 onError={() => {
                   setBrokenCustomImageByFestival((prev) => ({ ...prev, [festival.id]: true }));
@@ -281,3 +303,4 @@ export const ActivityPage = () => {
     </div>
   );
 };
+

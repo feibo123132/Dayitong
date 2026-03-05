@@ -1,7 +1,8 @@
-import { Disc, LayoutGrid, MessageCircleHeart, Guitar } from 'lucide-react';
+import { BookOpen, Disc, LayoutGrid, MessageCircleHeart, Guitar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const QUICK_ACCESS = [
+  { id: '6', name: '吉他免费入门', icon: BookOpen, color: 'text-emerald-600', bg: 'bg-emerald-50', path: '/guitar-beginner' },
   { id: '1', name: '路演', icon: Guitar, color: 'text-orange-500', bg: 'bg-orange-50', path: '/roadshow' },
   { id: '3', name: '单曲库', icon: Disc, color: 'text-purple-500', bg: 'bg-purple-50', path: '/music' },
   { id: '4', name: 'APP 铺子', icon: LayoutGrid, color: 'text-pink-500', bg: 'bg-pink-50', path: '/app-store' },
@@ -22,7 +23,7 @@ export const QuickAccess = () => {
           <div className={`w-12 h-12 rounded-full ${item.bg} flex items-center justify-center ${item.color}`}>
             <item.icon size={24} />
           </div>
-          <span className="text-xs font-medium text-jieyou-text">{item.name}</span>
+          <span className="whitespace-nowrap text-xs font-medium text-jieyou-text">{item.name}</span>
         </div>
       ))}
     </div>

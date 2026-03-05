@@ -46,7 +46,7 @@ export const MainLayout = () => {
         {/* Top Status Bar (Placeholder for Mobile Style) */}
         {isHomePage && (
           <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md px-4 py-3 flex items-center justify-between border-b border-gray-100">
-            <div className="font-bold text-lg text-jieyou-text">JIEYOU音乐工场</div>
+            <div className="font-bold text-lg text-jieyou-text">我们的JIEYOU宇宙</div>
             <div className="text-sm text-jieyou-mint">菜单</div>
           </header>
         )}
