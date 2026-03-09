@@ -3,7 +3,6 @@
   CircleEllipsis,
   Heart,
   MessageSquareHeart,
-  Music2,
   Settings,
   Smile,
   SquareLibrary,
@@ -72,14 +71,6 @@ const MENU_GROUPS: MenuItem[][] = [
       iconBg: 'bg-red-50',
       iconColor: 'text-red-400',
       extra: '敬请期待',
-    },
-    {
-      id: 'station',
-      label: '音乐站',
-      icon: Music2,
-      iconBg: 'bg-blue-50',
-      iconColor: 'text-blue-500',
-      path: '/music',
     },
     {
       id: 'apps',

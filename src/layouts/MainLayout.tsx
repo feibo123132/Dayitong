@@ -1,5 +1,5 @@
-import { Outlet, NavLink, useLocation } from 'react-router-dom';
-import { Home, Music, User, Calendar } from 'lucide-react';
+﻿import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Home, User, Calendar } from 'lucide-react';
 import { useEffect } from 'react';
 import { useGuessMusicStore } from '../store/useGuessMusicStore';
 import { useRankingStore } from '../store/useRankingStore';
@@ -80,17 +80,6 @@ export const MainLayout = () => {
             >
               <Calendar size={24} />
               <span className="text-[10px] font-medium">活动</span>
-            </NavLink>
-            <NavLink
-              to="/music"
-              className={({ isActive }) =>
-                `flex flex-col items-center justify-center w-full h-full space-y-1 ${
-                  isActive ? 'text-jieyou-mint' : 'text-gray-400 hover:text-gray-600'
-                }`
-              }
-            >
-              <Music size={24} />
-              <span className="text-[10px] font-medium">音乐</span>
             </NavLink>
             <NavLink
               to="/profile"

@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarCheck2, Gift } from 'lucide-react';
+﻿import { ArrowLeft, CalendarCheck2, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const BEGINNER_ITEMS = [
@@ -9,6 +9,7 @@ const BEGINNER_ITEMS = [
     icon: Gift,
     color: 'text-amber-500',
     bgColor: 'bg-amber-50',
+    href: 'beginner-benefits.html'
   },
   {
     id: 'checkin',
@@ -16,22 +17,29 @@ const BEGINNER_ITEMS = [
     desc: '记录每日练琴进度',
     icon: CalendarCheck2,
     color: 'text-emerald-600',
-    bgColor: 'bg-emerald-50',
-  },
+    bgColor: 'bg-emerald-50'
+  }
 ];
 
 export const GuitarBeginnerPage = () => {
   const navigate = useNavigate();
+  const beginnerHeroImageUrl = `${import.meta.env.BASE_URL}images/guitar-beginner/guitar-beginner-cover.png`;
+
+  const handleItemClick = (href?: string) => {
+    if (!href) {
+      return;
+    }
+    window.location.assign(`${import.meta.env.BASE_URL}${href}`);
+  };
 
   return (
     <div className="min-h-screen bg-amber-50/40">
-      <div className="relative h-48 w-full overflow-hidden rounded-b-[2rem] bg-gradient-to-r from-amber-500 to-orange-500 shadow-md">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1510915361894-db8b60106cb1?q=80&w=1600&auto=format&fit=crop')] bg-cover bg-center opacity-35"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-black/10 to-transparent"></div>
+      <div className="relative h-48 w-full overflow-hidden rounded-b-[2rem] shadow-md">
+        <img src={beginnerHeroImageUrl} alt="吉他免费入门背景图" className="absolute inset-0 h-full w-full object-cover" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
           <h1 className="text-3xl font-bold tracking-wide text-white drop-shadow-md">吉他免费入门</h1>
-          <p className="mt-2 text-sm text-white/90">零基础也能开始弹唱</p>
+          <p className="mt-2 text-sm text-white/90">欢迎友友们来尝鲜</p>
         </div>
 
         <button
@@ -45,9 +53,13 @@ export const GuitarBeginnerPage = () => {
       <div className="relative z-10 mx-auto -mt-10 max-w-md px-4 pb-10">
         <div className="grid grid-cols-2 gap-4">
           {BEGINNER_ITEMS.map((item) => (
-            <div
+            <button
               key={item.id}
-              className="flex flex-col items-center rounded-2xl bg-white p-5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
+              type="button"
+              onClick={() => handleItemClick(item.href)}
+              className={`flex flex-col items-center rounded-2xl bg-white p-5 text-center shadow-sm transition-all duration-300 ${
+                item.href ? 'cursor-pointer hover:-translate-y-1 hover:shadow-lg' : 'cursor-default'
+              }`}
             >
               <div className={`mb-3 flex h-16 w-16 items-center justify-center rounded-2xl shadow-inner ${item.bgColor} ${item.color}`}>
                 <item.icon size={32} />
@@ -55,11 +67,10 @@ export const GuitarBeginnerPage = () => {
 
               <h3 className="mb-1 font-bold text-gray-800">{item.name}</h3>
               <p className="text-xs text-gray-500">{item.desc}</p>
-            </div>
+            </button>
           ))}
         </div>
       </div>
     </div>
   );
 };
-

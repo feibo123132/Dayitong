@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新手入门超强福利企划！</title>
+    <!-- 引入极度夸张的波普风中文字体 -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Nunito:ital,wght@0,900;1,900&display=swap" rel="stylesheet">
+    
+    <style>
+        /* =========================================
+           酸性千禧色盘 (Acid Y2K Palette)
+           ========================================= */
+        :root {
+            --acid-cyan: #4DEEEA;     /* 亮青底色 */
+            --acid-yellow: #FFE500;   /* 荧光黄 */
+            --acid-pink: #FF3399;     /* 芭比粉 */
+            --acid-purple: #8D52FF;   /* 电音紫 */
+            --acid-green: #00FF66;    /* 毒液绿 */
+            --pure-white: #FFFFFF;
+            --pure-black: #000000;
+            
+            --border-thick: 4px solid var(--pure-black);
+            --shadow-hard: 6px 6px 0px var(--pure-black);
+            
+            --font-title: 'ZCOOL KuaiLe', cursive;
+            --font-body: 'Nunito', system-ui, -apple-system, sans-serif;
+        }
+
+        /* =========================================
+           全局重置与 Riso 噪点滤镜 (Global & Grain)
+           ========================================= */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            /* 模拟参考图的粉蓝过渡底布 */
+            background-color: #FFB6E6;
+            background-image: linear-gradient(160deg, #FFB6E6 0%, #B8E4FF 50%, #E6F5FF 100%);
+            font-family: var(--font-body);
+            color: var(--pure-black);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 3rem 1.5rem 5rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* 覆盖全屏的复古印刷颗粒 (Risograph Texture) */
+        body::after {
+            content: ''; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            pointer-events: none; z-index: 999; opacity: 0.15; mix-blend-mode: multiply;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        /* =========================================
+           顶部情报封条 (Ticker Tape)
+           ========================================= */
+        .tape-banner {
+            position: fixed; top: 0; left: 0; width: 100%;
+            background: var(--acid-yellow); border-bottom: var(--border-thick);
+            z-index: 100; padding: 6px 0; font-weight: 900; font-size: 1.1rem;
+            text-transform: uppercase; overflow: hidden; display: flex; white-space: nowrap;
+        }
+        .tape-banner span {
+            display: inline-block; padding-left: 100%;
+            animation: ticker 12s linear infinite;
+        }
+        @keyframes ticker { 0% { transform: translate(0, 0); } 100% { transform: translate(-100%, 0); } }
+
+        /* =========================================
+           主画板：青色网格文件夹 (The Blueprint Clipboard)
+           ========================================= */
+        .clipboard-board {
+            background-color: var(--acid-cyan);
+            /* 原生 CSS 绘制细密网格底纹 */
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.15) 2px, transparent 2px),
+                linear-gradient(90deg, rgba(0,0,0,0.15) 2px, transparent 2px);
+            background-size: 30px 30px;
+            border: var(--border-thick);
+            max-width: 580px; width: 100%;
+            margin-top: 2rem; position: relative;
+            padding: 4.5rem 1.5rem 2.5rem;
+            box-shadow: 15px 15px 0px rgba(0,0,0,0.2);
+            transform: rotate(-1.5deg);
+        }
+
+        /* 顶部巨大的金属夹 (The Metal Clip) */
+        .metal-clip {
+            position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+            width: 160px; height: 60px; background: #CFD8DC;
+            border: var(--border-thick); border-radius: 20px 20px 0 0;
+            box-shadow: inset 0 -10px 0 #90A4AE;
+            display: flex; justify-content: center; align-items: center; z-index: 10;
+        }
+        .metal-clip::after { /* 夹子上的圆孔 */
+            content: ''; width: 25px; height: 25px; background: var(--acid-cyan);
+            border: 3px solid var(--pure-black); border-radius: 50%;
+        }
+
+        /* 装饰元素 (Decorations) */
+        .deco { position: absolute; z-index: 5; font-family: sans-serif; }
+        .star { font-size: 3rem; color: var(--acid-green); -webkit-text-stroke: 2px var(--pure-black); text-shadow: 3px 3px 0 var(--pure-black); }
+        .lightning { font-size: 4rem; color: var(--acid-yellow); transform: rotate(15deg); text-shadow: 4px 4px 0 var(--pure-black); }
+
+        /* =========================================
+           爆炸标题区 (Explosive Headers)
+           ========================================= */
+        .header-area { text-align: center; margin-bottom: 2rem; position: relative; z-index: 10; }
+
+        .title-huge {
+            font-family: var(--font-title); font-size: 4.5rem; line-height: 1;
+            transform: rotate(-3deg);
+            color: var(--pure-white);
+            /* 多重 text-shadow 完美模拟无瑕疵的粗描边 + 底部厚度 */
+            text-shadow: 
+                -3px -3px 0 var(--pure-black), 3px -3px 0 var(--pure-black),
+                -3px 3px 0 var(--pure-black), 3px 3px 0 var(--pure-black),
+                -3px 0 0 var(--pure-black), 3px 0 0 var(--pure-black),
+                0 -3px 0 var(--pure-black), 0 3px 0 var(--pure-black),
+                8px 8px 0 var(--acid-purple);
+            letter-spacing: 2px; position: relative; margin-bottom: 0.5rem;
+        }
+
+        .title-sub {
+            font-family: var(--font-title); font-size: 2.8rem; line-height: 1.1;
+            color: var(--acid-yellow);
+            text-shadow: 
+                -2px -2px 0 var(--pure-black), 2px -2px 0 var(--pure-black),
+                -2px 2px 0 var(--pure-black), 2px 2px 0 var(--pure-black),
+                5px 5px 0 var(--acid-pink);
+            transform: rotate(2deg) translateX(10px); display: inline-block;
+        }
+
+        /* =========================================
+           福利卡片区 (The Sticker Panels)
+           ========================================= */
+        .sticker-panel {
+            background: var(--pure-white); border: var(--border-thick);
+            box-shadow: var(--shadow-hard); padding: 1.5rem; margin-bottom: 2rem;
+            position: relative; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        .sticker-panel:hover { transform: translate(-5px, -5px) scale(1.02) !important; box-shadow: 12px 12px 0px var(--pure-black); z-index: 20; }
+
+        /* 巨大的独立序号牌 */
+        .num-box {
+            position: absolute; top: -15px; left: -15px;
+            width: 45px; height: 45px; border: var(--border-thick);
+            display: flex; justify-content: center; align-items: center;
+            font-family: var(--font-title); font-size: 2rem; color: var(--pure-black);
+            box-shadow: 4px 4px 0 var(--pure-black);
+        }
+
+        /* --- Panel 1: 线下畅玩 --- */
+        .panel-1 { background: var(--acid-yellow); transform: rotate(1.5deg); }
+        .panel-1 .num-box { background: var(--acid-pink); color: var(--pure-white); transform: rotate(-10deg); }
+        
+        .big-text { font-family: var(--font-title); font-size: 2.2rem; color: var(--acid-purple); -webkit-text-stroke: 1px var(--pure-black); text-shadow: 3px 3px 0 var(--pure-black); margin-bottom: 10px; }
+        
+        .time-bubble {
+            display: inline-block; background: var(--pure-white); color: var(--pure-black);
+            font-weight: 900; font-size: 1.2rem; padding: 6px 15px; border: 3px solid var(--pure-black);
+            /* 模拟剪裁不规则的对话框 */
+            clip-path: polygon(0% 0%, 100% 0%, 95% 100%, 5% 95%);
+            transform: rotate(-3deg); box-shadow: 3px 3px 0 rgba(0,0,0,0.3);
+        }
+
+        /* --- Panel 2: 性价比 --- */
+        .panel-2 { background: var(--pure-white); transform: rotate(-1deg); }
+        .panel-2 .num-box { background: var(--acid-cyan); transform: rotate(5deg); }
+        .highlight-bar {
+            background: var(--acid-green); display: inline-block; padding: 2px 8px;
+            border: 2px solid var(--pure-black); font-weight: 900; font-size: 1.5rem;
+            transform: rotate(-2deg); margin-bottom: 8px; box-shadow: 2px 2px 0 var(--pure-black);
+        }
+
+        /* --- Panel 3: 解决花大钱 --- */
+        .panel-3 { background: #FFD1DC; transform: rotate(2deg); margin-bottom: 3rem; }
+        .panel-3 .num-box { background: var(--acid-yellow); transform: rotate(-5deg); }
+        .strike-text {
+            font-family: var(--font-title); font-size: 2.2rem; color: var(--pure-black);
+            position: relative; display: inline-block;
+        }
+        /* 红叉划掉效果 */
+        .strike-text::after {
+            content: ''; position: absolute; left: -5%; top: 45%; width: 110%; height: 8px;
+            background: var(--acid-pink); border: 2px solid var(--pure-black); transform: rotate(-5deg);
+        }
+        .solution-text { font-weight: 900; font-size: 1.3rem; margin-top: 10px; color: var(--acid-purple); }
+
+        /* =========================================
+           底部巨型动作按钮 (Action Buttons)
+           ========================================= */
+        .action-area { display: flex; gap: 1rem; position: relative; }
+        
+        .btn-boom {
+            flex: 1; background: var(--acid-pink); color: var(--pure-white);
+            border: var(--border-thick); border-radius: 40px; padding: 15px;
+            font-family: var(--font-title); font-size: 1.8rem; text-align: center;
+            box-shadow: var(--shadow-hard); cursor: pointer;
+            text-shadow: 2px 2px 0 var(--pure-black);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn-boom:active { transform: translate(4px, 4px); box-shadow: 2px 2px 0px var(--pure-black); }
+
+        .btn-cyan { background: var(--acid-cyan); color: var(--pure-black); text-shadow: none; }
+
+        /* 纯 CSS 绘制的绿色回形针 (Paperclip Overlay) */
+        .paperclip {
+            position: absolute; bottom: 10px; right: -20px;
+            width: 35px; height: 80px; border: 5px solid var(--acid-green);
+            border-radius: 20px; transform: rotate(25deg);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.4); z-index: 30; pointer-events: none;
+        }
+        .paperclip::after { 
+            content: ''; position: absolute; top: 6px; bottom: 20px; left: 5px; right: 5px;
+            border: 5px solid var(--acid-green); border-bottom: none; border-radius: 12px 12px 0 0;
+        }
+
+        /* 移动端微调 */
+        @media (max-width: 480px) {
+            .title-huge { font-size: 3.5rem; }
+            .title-sub { font-size: 2.2rem; }
+            .big-text, .strike-text { font-size: 1.8rem; }
+            .action-area { flex-direction: column; }
+            .btn-boom { font-size: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 顶部滚动封条 -->
+    <div class="tape-banner">
+        <span>🎸 DANGER! 拒绝花大钱坑！新手入门超强福利企划全面解禁！ ⚡ GET YOUR GUITAR READY! 🎸</span>
+    </div>
+
+    <!-- 主画板 (网格文件夹) -->
+    <main class="clipboard-board">
+        
+        <!-- 金属夹子 -->
+        <div class="metal-clip"></div>
+
+        <!-- 爆炸装饰 -->
+        <div class="deco star" style="top: 8%; left: -10px; transform: rotate(-20deg);">★</div>
+        <div class="deco lightning" style="top: 12%; right: -20px;">⚡</div>
+        <div class="deco star" style="bottom: 25%; right: -15px; font-size: 2rem; transform: rotate(15deg);">★</div>
+
+        <!-- 大标题 -->
+        <header class="header-area">
+            <h1 class="title-huge">新手入门</h1><br>
+            <h2 class="title-sub">超强福利企划</h2>
+        </header>
+
+        <!-- 福利一 -->
+        <article class="sticker-panel panel-1">
+            <div class="num-box">1</div>
+            <div class="big-text">线下畅玩交流！</div>
+            <div class="time-bubble">⏱️ 2次特权 · 40min/次</div>
+            <p style="margin-top: 8px; font-weight: 800; color: #333;">面对面带你玩转吉他，直接上手不废话！</p>
+        </article>
+
+        <!-- 福利二 -->
+        <article class="sticker-panel panel-2">
+            <div class="num-box">2</div>
+            <div class="highlight-bar">⭐ 极致性价比</div>
+            <div style="font-family: var(--font-title); font-size: 1.8rem; color: var(--pure-black);">解锁最佳入门方式！</div>
+            <p style="margin-top: 5px; font-weight: 800; color: #555;">少走弯路，用新手友好的方式开启吉他弹唱之路。</p>
+        </article>
+
+        <!-- 福利三 -->
+        <article class="sticker-panel panel-3">
+            <div class="num-box">3</div>
+            <div style="font-weight: 900; margin-bottom: 5px;">彻底解决：</div>
+            <div class="strike-text">一时兴起花大钱</div>
+            <div class="solution-text">❌ 拒绝冲动消费，试过真的热爱再投入！</div>
+        </article>
+
+        <!-- 底部大按钮区 -->
+        <div class="action-area">
+            <button class="btn-boom btn-cyan">查看规则</button>
+            <button class="btn-boom">立即解锁福利！</button>
+            <!-- 别在按钮上的回形针 -->
+            <div class="paperclip"></div>
+        </div>
+
+    </main>
+
+</body>
+</html>

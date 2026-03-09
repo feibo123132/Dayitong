@@ -1,21 +1,20 @@
-import { motion, AnimatePresence } from 'framer-motion';
+﻿import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 
 const CAROUSEL_ITEMS = [
   {
     id: 1,
-    title: '吉他免费试玩2次',
-    subtitle: '欢迎友友们来尝鲜',
     image: 'bg-gradient-to-r from-pink-300 to-rose-400',
     imageUrl: `${import.meta.env.BASE_URL}images/home/carousel-4-2.png`,
-    textColor: 'text-white'
+    textColor: 'text-white',
+    href: 'beginner-benefits.html'
   },
   {
     id: 2,
-    title: '热门单曲推荐',
-    subtitle: '《夏日微风》',
     image: 'bg-gradient-to-r from-jieyou-mint to-teal-400',
-    textColor: 'text-white'
+    imageUrl: `${import.meta.env.BASE_URL}images/home/carousel-4-4.png`,
+    textColor: 'text-white',
+    href: 'points-reward.html'
   },
   {
     id: 3,
@@ -28,6 +27,7 @@ const CAROUSEL_ITEMS = [
 
 export const HomeCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const currentItem = CAROUSEL_ITEMS[currentIndex];
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -35,6 +35,13 @@ export const HomeCarousel = () => {
     }, 5000);
     return () => clearInterval(timer);
   }, []);
+
+  const handleCurrentItemClick = () => {
+    if (!currentItem.href) {
+      return;
+    }
+    window.location.assign(`${import.meta.env.BASE_URL}${currentItem.href}`);
+  };
 
   return (
     <div className="relative w-full h-40 rounded-3xl overflow-hidden shadow-sm">
@@ -45,26 +52,31 @@ export const HomeCarousel = () => {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -100 }}
           transition={{ duration: 0.5 }}
-          className={`absolute inset-0 ${CAROUSEL_ITEMS[currentIndex].image} flex flex-col justify-center px-6`}
+          className={`absolute inset-0 ${currentItem.image} flex flex-col justify-center px-6 ${currentItem.href ? 'cursor-pointer' : ''}`}
+          onClick={handleCurrentItemClick}
+          role={currentItem.href ? 'button' : undefined}
+          tabIndex={currentItem.href ? 0 : undefined}
+          onKeyDown={(event) => {
+            if ((event.key === 'Enter' || event.key === ' ') && currentItem.href) {
+              event.preventDefault();
+              handleCurrentItemClick();
+            }
+          }}
         >
-          {CAROUSEL_ITEMS[currentIndex].imageUrl && (
+          {currentItem.imageUrl && (
             <img
-              src={CAROUSEL_ITEMS[currentIndex].imageUrl}
-              alt={CAROUSEL_ITEMS[currentIndex].title}
+              src={currentItem.imageUrl}
+              alt={currentItem.title ?? 'carousel image'}
               className="absolute inset-0 h-full w-full object-cover"
             />
           )}
           <div className="relative z-10">
-          <h2 className={`text-xl font-bold ${CAROUSEL_ITEMS[currentIndex].textColor}`}>
-            {CAROUSEL_ITEMS[currentIndex].title}
-          </h2>
-          <p className={`mt-1 text-sm opacity-90 ${CAROUSEL_ITEMS[currentIndex].textColor}`}>
-            {CAROUSEL_ITEMS[currentIndex].subtitle}
-          </p>
+            <h2 className={`text-xl font-bold ${currentItem.textColor}`}>{currentItem.title}</h2>
+            <p className={`mt-1 text-sm opacity-90 ${currentItem.textColor}`}>{currentItem.subtitle}</p>
           </div>
         </motion.div>
       </AnimatePresence>
-      
+
       {/* Dots */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5">
         {CAROUSEL_ITEMS.map((_, index) => (

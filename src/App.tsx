@@ -10,7 +10,6 @@ import { GuitarBeginnerPage } from './pages/GuitarBeginnerPage';
 import { Home } from './pages/Home';
 import { LocationSelectPage } from './pages/LocationSelectPage';
 import { LoginPage } from './pages/LoginPage';
-import { MusicPage } from './pages/MusicPage';
 import { ProfileFieldEditPage } from './pages/ProfileFieldEditPage';
 import { ProfileInfoPage } from './pages/ProfileInfoPage';
 import { RankingPage } from './pages/RankingPage';
@@ -29,7 +28,6 @@ function App() {
           <Route path="activity" element={<ActivityPage />} />
           <Route path="activity/:festivalId" element={<ActivityDetailPage />} />
           <Route path="activity/:festivalId/checkin" element={<ActivityCheckinPage />} />
-          <Route path="music" element={<MusicPage />} />
           <Route path="ranking" element={<RankingPage />} />
           <Route path="ranking/:userId" element={<RankingUserDetailPage />} />
           <Route path="guess-music" element={<GuessMusicPage />} />
