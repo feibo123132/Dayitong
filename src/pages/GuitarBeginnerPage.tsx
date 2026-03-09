@@ -5,7 +5,7 @@ const BEGINNER_ITEMS = [
   {
     id: 'benefits',
     name: '入门福利',
-    desc: '新手礼包与入门曲谱',
+    desc: '新手礼包等你来拿',
     icon: Gift,
     color: 'text-amber-500',
     bgColor: 'bg-amber-50',

@@ -1,4 +1,4 @@
-import { ArrowLeft, ExternalLink, Heart } from 'lucide-react';
+import { ArrowLeft, ExternalLink, Globe, Heart } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const APPS = [
@@ -13,6 +13,15 @@ const APPS = [
   },
   { 
     id: '2', 
+    name: '世界上的另一个你', 
+    desc: '进入 JIEYOU 宇宙网页应用', 
+    icon: Globe, 
+    color: 'text-cyan-500',
+    bgColor: 'bg-cyan-50',
+    url: 'https://jieyouyuzhou.cn/' 
+  },
+  { 
+    id: '3', 
     name: '更多应用', 
     desc: '敬请期待...', 
     icon: ExternalLink, 
