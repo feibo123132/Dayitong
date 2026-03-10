@@ -37,7 +37,7 @@ export const ClubMembers = () => {
         </div>
 
         <div className="mt-3 grid grid-cols-1 gap-2 text-sm">
-          {displayMembers.map((member, index) => (
+          {displayMembers.map((member) => (
             <div key={member.name} className="flex justify-between items-center py-1.5 border-b border-blue-50/50 last:border-0">
               <span className="text-gray-500">{member.role}</span>
               <span className="font-medium text-gray-800">{member.name}</span>
