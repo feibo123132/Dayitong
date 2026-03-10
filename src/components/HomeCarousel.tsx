@@ -1,7 +1,32 @@
 ﻿import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { CurrentActivity } from './CurrentActivity';
 
-const CAROUSEL_ITEMS = [
+type CarouselItem = 
+  | {
+      id: number;
+      type: 'component';
+      component: React.ReactNode;
+      image?: never;
+      imageUrl?: never;
+      textColor?: never;
+      title?: never;
+      subtitle?: never;
+      href?: never;
+    }
+  | {
+      id: number;
+      type?: never;
+      component?: never;
+      image: string;
+      imageUrl?: string;
+      textColor: string;
+      title?: string;
+      subtitle?: string;
+      href?: string;
+    };
+
+const CAROUSEL_ITEMS: CarouselItem[] = [
   {
     id: 1,
     image: 'bg-gradient-to-r from-pink-300 to-rose-400',
@@ -18,10 +43,8 @@ const CAROUSEL_ITEMS = [
   },
   {
     id: 3,
-    title: '积分兑换上新',
-    subtitle: '限量吉他拨片',
-    image: 'bg-gradient-to-r from-orange-300 to-red-400',
-    textColor: 'text-white'
+    type: 'component',
+    component: <CurrentActivity />
   }
 ];
 
@@ -52,39 +75,39 @@ export const HomeCarousel = () => {
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -100 }}
           transition={{ duration: 0.5 }}
-          className={`absolute inset-0 ${currentItem.image} flex flex-col justify-center px-6 ${currentItem.href ? 'cursor-pointer' : ''}`}
-          onClick={handleCurrentItemClick}
-          role={currentItem.href ? 'button' : undefined}
-          tabIndex={currentItem.href ? 0 : undefined}
-          onKeyDown={(event) => {
-            if ((event.key === 'Enter' || event.key === ' ') && currentItem.href) {
-              event.preventDefault();
-              handleCurrentItemClick();
-            }
-          }}
+          className={`absolute inset-0 w-full h-full`}
         >
-          {currentItem.imageUrl && (
-            <img
-              src={currentItem.imageUrl}
-              alt={currentItem.title ?? 'carousel image'}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
+          {currentItem.type === 'component' ? (
+            currentItem.component
+          ) : (
+            <div 
+              className={`w-full h-full ${currentItem.image} flex flex-col justify-center px-6 ${currentItem.href ? 'cursor-pointer' : ''}`}
+              onClick={handleCurrentItemClick}
+            >
+              {currentItem.imageUrl && (
+                <img
+                  src={currentItem.imageUrl}
+                  alt={currentItem.title ?? 'carousel image'}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              )}
+              <div className="relative z-10">
+                <h2 className={`text-xl font-bold ${currentItem.textColor}`}>{currentItem.title}</h2>
+                <p className={`mt-1 text-sm opacity-90 ${currentItem.textColor}`}>{currentItem.subtitle}</p>
+              </div>
+            </div>
           )}
-          <div className="relative z-10">
-            <h2 className={`text-xl font-bold ${currentItem.textColor}`}>{currentItem.title}</h2>
-            <p className={`mt-1 text-sm opacity-90 ${currentItem.textColor}`}>{currentItem.subtitle}</p>
-          </div>
         </motion.div>
       </AnimatePresence>
 
       {/* Dots */}
-      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5">
+      <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-20">
         {CAROUSEL_ITEMS.map((_, index) => (
           <button
             key={index}
             onClick={() => setCurrentIndex(index)}
             className={`w-1.5 h-1.5 rounded-full transition-colors ${
-              index === currentIndex ? 'bg-white' : 'bg-white/40'
+              index === currentIndex ? 'bg-white shadow-sm' : 'bg-white/40'
             }`}
           />
         ))}

@@ -1,6 +1,8 @@
 ﻿import { HomeCarousel } from '../components/HomeCarousel';
 import { QuickAccess } from '../components/QuickAccess';
-import { CurrentActivity } from '../components/CurrentActivity';
+import { ClubCulture } from '../components/ClubCulture';
+import { ClubMembers } from '../components/ClubMembers';
+// import { CurrentActivity } from '../components/CurrentActivity';
 
 export const Home = () => {
   return (
@@ -13,10 +15,14 @@ export const Home = () => {
         <QuickAccess />
       </section>
 
-      <section>
+      <ClubCulture />
+      
+      <ClubMembers />
+
+      {/* <section>
         <h2 className="text-lg font-semibold mb-3 px-2 text-jieyou-text">当前活动</h2>
         <CurrentActivity />
-      </section>
+      </section> */}
     </div>
   );
 };

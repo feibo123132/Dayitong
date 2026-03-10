@@ -1,4 +1,5 @@
 ﻿import { ArrowLeft, CalendarCheck2, Gift } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const BEGINNER_ITEMS = [
@@ -23,12 +24,19 @@ const BEGINNER_ITEMS = [
 
 export const GuitarBeginnerPage = () => {
   const navigate = useNavigate();
+  const [showComingSoonModal, setShowComingSoonModal] = useState(false);
   const beginnerHeroImageUrl = `${import.meta.env.BASE_URL}images/guitar-beginner/guitar-beginner-cover.png`;
 
-  const handleItemClick = (href?: string) => {
+  const handleItemClick = (id: string, href?: string) => {
+    if (id === 'checkin') {
+      setShowComingSoonModal(true);
+      return;
+    }
+
     if (!href) {
       return;
     }
+
     window.location.assign(`${import.meta.env.BASE_URL}${href}`);
   };
 
@@ -56,9 +64,9 @@ export const GuitarBeginnerPage = () => {
             <button
               key={item.id}
               type="button"
-              onClick={() => handleItemClick(item.href)}
+              onClick={() => handleItemClick(item.id, item.href)}
               className={`flex flex-col items-center rounded-2xl bg-white p-5 text-center shadow-sm transition-all duration-300 ${
-                item.href ? 'cursor-pointer hover:-translate-y-1 hover:shadow-lg' : 'cursor-default'
+                item.href || item.id === 'checkin' ? 'cursor-pointer hover:-translate-y-1 hover:shadow-lg' : 'cursor-default'
               }`}
             >
               <div className={`mb-3 flex h-16 w-16 items-center justify-center rounded-2xl shadow-inner ${item.bgColor} ${item.color}`}>
@@ -71,6 +79,21 @@ export const GuitarBeginnerPage = () => {
           ))}
         </div>
       </div>
+
+      {showComingSoonModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-6">
+          <div className="w-full max-w-xs rounded-2xl bg-white p-6 text-center shadow-xl">
+            <p className="text-base font-medium text-gray-800">该板块尚未开发，敬请期待……</p>
+            <button
+              type="button"
+              onClick={() => setShowComingSoonModal(false)}
+              className="mt-5 w-full rounded-xl bg-emerald-500 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-600"
+            >
+              我知道了
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
