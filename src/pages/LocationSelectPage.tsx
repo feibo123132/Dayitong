@@ -1,4 +1,4 @@
-import { ArrowLeft, MapPin } from 'lucide-react';
+﻿import { ArrowLeft, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const LOCATIONS = [
@@ -20,18 +20,18 @@ export const LocationSelectPage = () => {
 
   return (
     <div className="min-h-screen bg-teal-50/50">
-      <div className="relative h-48 w-full bg-gradient-to-r from-jieyou-mint to-teal-400 overflow-hidden rounded-b-[2rem] shadow-md">
-        <img src={bannerImageUrl} alt="路演地点背景图" className="absolute inset-0 w-full h-full object-cover opacity-35" />
+      <div className="relative h-48 w-full overflow-hidden rounded-b-[2rem] shadow-md">
+        <img src={bannerImageUrl} alt="路演地点背景图" className="absolute inset-0 h-full w-full object-cover" />
 
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 p-2 text-white/80 hover:text-white transition-colors bg-black/10 rounded-full backdrop-blur-sm"
+          className="absolute top-4 left-4 rounded-full bg-black/10 p-2 text-white/80 backdrop-blur-sm transition-colors hover:text-white"
         >
           <ArrowLeft size={24} />
         </button>
       </div>
 
-      <div className="max-w-md mx-auto px-4 -mt-10 relative z-10 pb-10">
+      <div className="relative z-10 mx-auto -mt-10 max-w-md px-4 pb-10">
         <div className="space-y-4">
           {LOCATIONS.map((location) => (
             <div
@@ -41,15 +41,15 @@ export const LocationSelectPage = () => {
                 relative overflow-hidden rounded-2xl p-6 shadow-md transition-all duration-300
                 ${
                   location.active
-                    ? 'bg-white cursor-pointer hover:shadow-xl hover:-translate-y-1 active:scale-98 border-2 border-transparent hover:border-teal-300'
-                    : 'bg-gray-100 cursor-not-allowed opacity-80'
+                    ? 'cursor-pointer border-2 border-transparent bg-white hover:-translate-y-1 hover:border-teal-300 hover:shadow-xl active:scale-98'
+                    : 'cursor-not-allowed bg-gray-100 opacity-80'
                 }
               `}
             >
               <div className="flex items-center space-x-4">
                 <div
                   className={`
-                  w-12 h-12 rounded-full flex items-center justify-center shadow-inner
+                  flex h-12 w-12 items-center justify-center rounded-full shadow-inner
                   ${location.active ? 'bg-teal-50 text-teal-500' : 'bg-gray-200 text-gray-400'}
                 `}
                 >
@@ -57,14 +57,14 @@ export const LocationSelectPage = () => {
                 </div>
 
                 <div className="flex-1">
-                  <h3 className={`font-bold text-lg ${location.active ? 'text-gray-800' : 'text-gray-500'}`}>{location.name}</h3>
+                  <h3 className={`text-lg font-bold ${location.active ? 'text-gray-800' : 'text-gray-500'}`}>{location.name}</h3>
                   {location.active && (
-                    <p className="text-xs text-teal-500 mt-1 flex items-center">
-                      <span className="w-2 h-2 rounded-full bg-teal-500 mr-2 animate-pulse"></span>
+                    <p className="mt-1 flex items-center text-xs text-teal-500">
+                      <span className="mr-2 h-2 w-2 animate-pulse rounded-full bg-teal-500"></span>
                       正在进行中
                     </p>
                   )}
-                  {!location.active && !location.isPlaceholder && <p className="text-xs text-gray-400 mt-1">暂无数据</p>}
+                  {!location.active && !location.isPlaceholder && <p className="mt-1 text-xs text-gray-400">暂无数据</p>}
                 </div>
 
                 {location.active && (

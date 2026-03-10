@@ -1,4 +1,4 @@
-﻿import { motion, AnimatePresence } from 'framer-motion';
+﻿﻿import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { PointsRewardCard } from './PointsRewardCard';
 import { CurrentActivity } from './CurrentActivity';

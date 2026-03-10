@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowLeft, ArrowUp, Check, Edit2, Plus, Search, Trash2 } from 'lucide-react';
+﻿import { ArrowDown, ArrowLeft, ArrowUp, Check, Edit2, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useGuessMusicStore, type GuessLocationKey } from '../store/useGuessMusicStore';
@@ -85,62 +85,59 @@ export const GuessMusicPage = () => {
 
   return (
     <div className="min-h-screen bg-teal-50/50">
-      <div className="relative h-48 w-full bg-gradient-to-r from-jieyou-mint to-teal-400 overflow-hidden rounded-b-[2rem] shadow-md">
-        <img src={bannerImageUrl} alt="路演背景图" className="absolute inset-0 w-full h-full object-cover opacity-30" />
+      <div className="relative h-48 w-full overflow-hidden rounded-b-[2rem] shadow-md">
+        <img src={bannerImageUrl} alt="路演背景图" className="absolute inset-0 h-full w-full object-cover" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
-          <h1 className="text-3xl font-bold text-white drop-shadow-md tracking-wide">{locationTitle}</h1>
+          <h1 className="text-3xl font-bold tracking-wide text-white drop-shadow-md">{locationTitle}</h1>
         </div>
 
         <button
           onClick={() => navigate(-1)}
-          className="absolute top-4 left-4 p-2 text-white/80 hover:text-white transition-colors bg-black/10 rounded-full backdrop-blur-sm"
+          className="absolute top-4 left-4 rounded-full bg-black/10 p-2 text-white/80 backdrop-blur-sm transition-colors hover:text-white"
         >
           <ArrowLeft size={24} />
         </button>
 
         <button
           onClick={() => setIsEditing((v) => !v)}
-          className="absolute top-4 right-4 p-2 text-white/80 hover:text-white transition-colors bg-black/10 rounded-full backdrop-blur-sm"
+          className="absolute top-4 right-4 rounded-full bg-black/10 p-2 text-white/80 backdrop-blur-sm transition-colors hover:text-white"
         >
           {isEditing ? <Check size={24} /> : <Edit2 size={24} />}
         </button>
       </div>
 
-      <div className="max-w-md mx-auto px-4 -mt-10 relative z-10 pb-10">
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl p-2 shadow-lg border border-white/50">
-          <div className="bg-gradient-to-r from-jieyou-mint to-teal-400 text-white rounded-t-2xl py-3 px-4 flex text-sm font-bold shadow-sm items-center">
+      <div className="relative z-10 mx-auto -mt-10 max-w-md px-4 pb-10">
+        <div className="rounded-3xl border border-white/50 bg-white/40 p-2 shadow-lg backdrop-blur-sm">
+          <div className="flex items-center rounded-t-2xl bg-gradient-to-r from-jieyou-mint to-teal-400 px-4 py-3 text-sm font-bold text-white shadow-sm">
             <div
-              className="w-10 text-center cursor-pointer hover:bg-white/10 rounded py-1 transition-colors flex flex-col items-center justify-center"
+              className="flex w-10 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
               onClick={() => handleSort('rank')}
             >
               <div className="flex items-center">
                 排名
-                <div className="ml-0.5 flex flex-col -space-y-1">
+                <div className="-space-y-1 ml-0.5 flex flex-col">
                   <ArrowUp size={8} className={sortConfig.key === 'rank' && sortConfig.direction === 'asc' ? 'text-white' : 'text-white/40'} />
                   <ArrowDown size={8} className={sortConfig.key === 'rank' && sortConfig.direction === 'desc' ? 'text-white' : 'text-white/40'} />
                 </div>
               </div>
             </div>
 
-            <div className="flex-1 text-center relative group">
-              <div
-                className="flex items-center justify-center cursor-pointer hover:bg-white/10 rounded py-1 transition-colors"
-                onClick={() => setShowSearch((v) => !v)}
-              >
+            <div className="group relative flex-1 text-center">
+              <div className="flex cursor-pointer items-center justify-center rounded py-1 transition-colors hover:bg-white/10" onClick={() => setShowSearch((v) => !v)}>
                 昵称
                 <Search size={14} className="ml-1 opacity-70" />
               </div>
 
               {showSearch ? (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-white p-2 rounded-xl shadow-xl z-20 border border-teal-100">
+                <div className="absolute left-0 right-0 top-full z-20 mt-2 rounded-xl border border-teal-100 bg-white p-2 shadow-xl">
                   <input
                     autoFocus
                     type="text"
                     placeholder="搜索昵称..."
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-gray-800 text-xs focus:outline-none focus:border-teal-500"
+                    className="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-800 focus:border-teal-500 focus:outline-none"
                     onClick={(event) => event.stopPropagation()}
                   />
                 </div>
@@ -148,12 +145,12 @@ export const GuessMusicPage = () => {
             </div>
 
             <div
-              className="w-16 text-center cursor-pointer hover:bg-white/10 rounded py-1 transition-colors flex flex-col items-center justify-center"
+              className="flex w-16 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
               onClick={() => handleSort('count')}
             >
               <div className="flex items-center">
                 答对数
-                <div className="ml-0.5 flex flex-col -space-y-1">
+                <div className="-space-y-1 ml-0.5 flex flex-col">
                   <ArrowUp size={8} className={sortConfig.key === 'count' && sortConfig.direction === 'asc' ? 'text-white' : 'text-white/40'} />
                   <ArrowDown size={8} className={sortConfig.key === 'count' && sortConfig.direction === 'desc' ? 'text-white' : 'text-white/40'} />
                 </div>
@@ -161,12 +158,12 @@ export const GuessMusicPage = () => {
             </div>
 
             <div
-              className="w-16 text-center cursor-pointer hover:bg-white/10 rounded py-1 transition-colors flex flex-col items-center justify-center"
+              className="flex w-16 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
               onClick={() => handleSort('rate')}
             >
               <div className="flex items-center">
                 答对率
-                <div className="ml-0.5 flex flex-col -space-y-1">
+                <div className="-space-y-1 ml-0.5 flex flex-col">
                   <ArrowUp size={8} className={sortConfig.key === 'rate' && sortConfig.direction === 'asc' ? 'text-white' : 'text-white/40'} />
                   <ArrowDown size={8} className={sortConfig.key === 'rate' && sortConfig.direction === 'desc' ? 'text-white' : 'text-white/40'} />
                 </div>
@@ -174,12 +171,12 @@ export const GuessMusicPage = () => {
             </div>
 
             <div
-              className="w-16 text-center cursor-pointer hover:bg-white/10 rounded py-1 transition-colors flex flex-col items-center justify-center"
+              className="flex w-16 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
               onClick={() => handleSort('participationCount')}
             >
               <div className="flex items-center">
                 参与
-                <div className="ml-0.5 flex flex-col -space-y-1">
+                <div className="-space-y-1 ml-0.5 flex flex-col">
                   <ArrowUp
                     size={8}
                     className={sortConfig.key === 'participationCount' && sortConfig.direction === 'asc' ? 'text-white' : 'text-white/40'}
@@ -194,56 +191,56 @@ export const GuessMusicPage = () => {
             {isEditing ? <div className="w-8"></div> : null}
           </div>
 
-          <div className="space-y-2 mt-2 px-1">
+          <div className="mt-2 space-y-2 px-1">
             {isLoading ? (
-              <div className="text-center py-10 text-gray-400 bg-white/50 rounded-xl">加载中...</div>
+              <div className="rounded-xl bg-white/50 py-10 text-center text-gray-400">加载中...</div>
             ) : filteredAndSortedUsers.length > 0 ? (
               filteredAndSortedUsers.map((item) => (
-                <div key={item.id} className="bg-white rounded-xl py-3 px-4 flex items-center text-sm shadow-sm hover:shadow-md transition-shadow border border-teal-100/50">
-                  <div className="w-10 text-center flex-shrink-0">
-                    <span className={`font-bold text-lg ${item.rank <= 3 ? 'text-teal-500' : 'text-gray-500'}`}>{item.rank}</span>
+                <div key={item.id} className="flex items-center rounded-xl border border-teal-100/50 bg-white px-4 py-3 text-sm shadow-sm transition-shadow hover:shadow-md">
+                  <div className="w-10 flex-shrink-0 text-center">
+                    <span className={`text-lg font-bold ${item.rank <= 3 ? 'text-teal-500' : 'text-gray-500'}`}>{item.rank}</span>
                   </div>
 
-                  <div className="flex-1 px-1 min-w-0">
+                  <div className="min-w-0 flex-1 px-1">
                     {isEditing ? (
                       <input
                         type="text"
                         value={item.name}
                         onChange={(event) => void updateUser(item.id, event.target.value, item.count, item.participationCount)}
-                        className="w-full text-center bg-gray-50 border-b border-teal-200 focus:border-teal-500 outline-none text-gray-700"
+                        className="w-full border-b border-teal-200 bg-gray-50 text-center text-gray-700 outline-none focus:border-teal-500"
                       />
                     ) : (
-                      <div className="text-center font-medium text-gray-700 truncate">{item.name}</div>
+                      <div className="truncate text-center font-medium text-gray-700">{item.name}</div>
                     )}
                   </div>
 
-                  <div className="w-16 text-center flex-shrink-0">
+                  <div className="w-16 flex-shrink-0 text-center">
                     {isEditing ? (
                       <input
                         type="number"
                         value={item.count}
                         onChange={(event) => void updateUser(item.id, item.name, Number(event.target.value), item.participationCount)}
-                        className="w-full text-center bg-gray-50 border-b border-teal-200 focus:border-teal-500 outline-none font-bold text-teal-600"
+                        className="w-full border-b border-teal-200 bg-gray-50 text-center font-bold text-teal-600 outline-none focus:border-teal-500"
                       />
                     ) : (
                       <div className="font-bold text-teal-600">{item.count}</div>
                     )}
                   </div>
 
-                  <div className="w-16 text-center text-gray-500 text-xs truncate flex-shrink-0">{item.rate}</div>
+                  <div className="w-16 flex-shrink-0 truncate text-center text-xs text-gray-500">{item.rate}</div>
 
-                  <div className="w-16 text-center flex-shrink-0">
+                  <div className="w-16 flex-shrink-0 text-center">
                     {isEditing ? (
                       <input
                         type="number"
                         value={item.participationCount}
                         onChange={(event) => void updateUser(item.id, item.name, item.count, Number(event.target.value))}
-                        className="w-full text-center bg-gray-50 border-b border-teal-200 focus:border-teal-500 outline-none text-gray-500 text-xs"
+                        className="w-full border-b border-teal-200 bg-gray-50 text-center text-xs text-gray-500 outline-none focus:border-teal-500"
                       />
                     ) : (
                       <div
                         onClick={() => navigate(`/guess-music/history/${item.id}?location=${locationKey}`)}
-                        className="text-gray-500 text-xs hover:text-teal-500 hover:underline cursor-pointer transition-colors py-1"
+                        className="cursor-pointer py-1 text-xs text-gray-500 transition-colors hover:text-teal-500 hover:underline"
                       >
                         {item.participationCount}次
                       </div>
@@ -251,21 +248,21 @@ export const GuessMusicPage = () => {
                   </div>
 
                   {isEditing ? (
-                    <button onClick={() => void deleteUser(item.id)} className="w-8 flex justify-center text-red-400 hover:text-red-600 transition-colors flex-shrink-0">
+                    <button onClick={() => void deleteUser(item.id)} className="flex w-8 flex-shrink-0 justify-center text-red-400 transition-colors hover:text-red-600">
                       <Trash2 size={16} />
                     </button>
                   ) : null}
                 </div>
               ))
             ) : (
-              <div className="text-center py-10 text-gray-400 bg-white/50 rounded-xl">暂无数据</div>
+              <div className="rounded-xl bg-white/50 py-10 text-center text-gray-400">暂无数据</div>
             )}
           </div>
 
           {isEditing ? (
             <button
               onClick={handleAddUser}
-              className="w-full py-3 mt-4 rounded-xl border-2 border-dashed border-teal-300 text-teal-400 hover:bg-teal-50 transition-colors flex items-center justify-center space-x-2"
+              className="mt-4 flex w-full items-center justify-center space-x-2 rounded-xl border-2 border-dashed border-teal-300 py-3 text-teal-400 transition-colors hover:bg-teal-50"
             >
               <Plus size={20} />
               <span>添加选手</span>

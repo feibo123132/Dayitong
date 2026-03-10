@@ -1,8 +1,7 @@
-﻿﻿﻿﻿import {
+﻿﻿﻿﻿﻿﻿import {
   ChevronRight,
-  CircleEllipsis,
-  Heart,
   MessageSquareHeart,
+  Music,
   Settings,
   Smile,
   SquareLibrary,
@@ -27,16 +26,6 @@ type MenuItem = {
 };
 
 const MENU_GROUPS: MenuItem[][] = [
-  [
-    {
-      id: 'service',
-      label: '服务',
-      icon: CircleEllipsis,
-      iconBg: 'bg-green-50',
-      iconColor: 'text-green-500',
-      path: '/roadshow',
-    },
-  ],
   [
     {
       id: 'points',
@@ -65,12 +54,12 @@ const MENU_GROUPS: MenuItem[][] = [
   ],
   [
     {
-      id: 'favorites',
-      label: '收藏',
-      icon: Heart,
+      id: 'original-music',
+      label: '原创音乐盒',
+      icon: Music,
       iconBg: 'bg-red-50',
       iconColor: 'text-red-400',
-      extra: '敬请期待',
+      path: '/original-music-box',
     },
     {
       id: 'apps',

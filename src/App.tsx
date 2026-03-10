@@ -10,6 +10,7 @@ import { GuitarBeginnerPage } from './pages/GuitarBeginnerPage';
 import { Home } from './pages/Home';
 import { LocationSelectPage } from './pages/LocationSelectPage';
 import { LoginPage } from './pages/LoginPage';
+import { OriginalMusicBoxPage } from './pages/OriginalMusicBoxPage';
 import { ProfileFieldEditPage } from './pages/ProfileFieldEditPage';
 import { ProfileInfoPage } from './pages/ProfileInfoPage';
 import { RankingPage } from './pages/RankingPage';
@@ -36,6 +37,7 @@ function App() {
           <Route path="song-request" element={<SongRequestPage />} />
           <Route path="roadshow" element={<RoadshowPage />} />
           <Route path="app-store" element={<AppStorePage />} />
+          <Route path="original-music-box" element={<OriginalMusicBoxPage />} />
           <Route path="guitar-beginner" element={<GuitarBeginnerPage />} />
           <Route path="profile" element={<UserPage />} />
           <Route path="profile-info" element={<ProfileInfoPage />} />
