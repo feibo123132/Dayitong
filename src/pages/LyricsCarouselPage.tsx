@@ -382,7 +382,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
         </header>
 
         <div className="relative z-10 mt-1.5 flex items-center justify-center gap-3 text-[10px] text-white/55">
-          <span>{uploadHint || '支持 LRC/TXT，示例：[00:15.20] 歌词内容'}</span>
+          <span>{uploadHint}</span>
           {uploadedLyrics && (
             <button type="button" onClick={restoreDefaultLyrics} className="rounded-full border border-white/20 px-2 py-0.5 text-white/75">
               恢复默认

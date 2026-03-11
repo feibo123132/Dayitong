@@ -30,7 +30,7 @@ const JIEYOU_EXPLANATION = [
 type ExpandSection = 'nian' | 'ju' | 'benefit' | 'jieyou' | null;
 
 export const ClubCulture = () => {
-  const [expanded, setExpanded] = useState<ExpandSection>('benefit');
+  const [expanded, setExpanded] = useState<ExpandSection>(null);
 
   const toggle = (section: Exclude<ExpandSection, null>) => {
     setExpanded((current) => (current === section ? null : section));
