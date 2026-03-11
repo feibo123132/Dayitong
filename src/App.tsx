@@ -1,4 +1,4 @@
-import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+﻿import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ActivityDetailPage } from './pages/ActivityDetailPage';
 import { ActivityCheckinPage } from './pages/ActivityCheckinPage';
 import { MainLayout } from './layouts/MainLayout';
@@ -8,6 +8,7 @@ import { GuessMusicPage } from './pages/GuessMusicPage';
 import { GuessUserHistoryPage } from './pages/GuessUserHistoryPage';
 import { GuitarBeginnerPage } from './pages/GuitarBeginnerPage';
 import { Home } from './pages/Home';
+import { LyricsCarouselPage } from './pages/LyricsCarouselPage';
 import { LocationSelectPage } from './pages/LocationSelectPage';
 import { LoginPage } from './pages/LoginPage';
 import { OriginalMusicBoxPage } from './pages/OriginalMusicBoxPage';
@@ -24,6 +25,8 @@ function App() {
   return (
     <HashRouter>
       <Routes>
+        <Route path="/original-music-box/:songId" element={<LyricsCarouselPage />} />
+
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Home />} />
           <Route path="activity" element={<ActivityPage />} />
