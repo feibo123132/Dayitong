@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lyrics:sofa2lrc": "python tools/sofa_textgrid_to_lrc.py",
+    "lyrics:auto": "python tools/sofa_auto_pipeline.py"
   },
   "dependencies": {
     "@cloudbase/js-sdk": "^2.25.7",

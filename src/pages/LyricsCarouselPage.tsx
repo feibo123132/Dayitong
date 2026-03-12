@@ -1,5 +1,6 @@
 import {
   ChevronDown,
+  Download,
   Heart,
   ListMusic,
   MicOff,
@@ -32,6 +33,27 @@ const formatTime = (seconds: number) => {
     .padStart(2, '0');
   const rest = (safe % 60).toString().padStart(2, '0');
   return `${minutes}:${rest}`;
+};
+
+const formatLrcTimestamp = (seconds: number) => {
+  const safe = Math.max(0, seconds);
+  const minutes = Math.floor(safe / 60)
+    .toString()
+    .padStart(2, '0');
+  const remain = safe - Math.floor(safe / 60) * 60;
+  const secondsPart = Math.floor(remain)
+    .toString()
+    .padStart(2, '0');
+  const centiseconds = Math.round((remain - Math.floor(remain)) * 100)
+    .toString()
+    .padStart(2, '0');
+  return `${minutes}:${secondsPart}.${centiseconds}`;
+};
+
+const sanitizeLrcFilename = (value: string) => {
+  const fallback = 'lyrics';
+  const cleaned = value.replace(/[\\/:*?"<>|]/g, '').trim();
+  return cleaned.length > 0 ? cleaned : fallback;
 };
 
 const parseLrcText = (text: string): SongLyricLine[] => {
@@ -165,9 +187,23 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
   const lyricist = detail?.credits.find((item) => item.label === '作词')?.value;
   const composer = detail?.credits.find((item) => item.label === '作曲')?.value;
   const singer = detail?.credits.find((item) => item.label === '演唱')?.value ?? detail?.artist;
-  const infoLine = [lyricist ? `作词：${lyricist}` : null, composer ? `作曲：${composer}` : null, singer ? `演唱：${singer}` : null]
-    .filter((item): item is string => Boolean(item))
-    .join('  ·  ');
+
+  const infoParts: (string | null)[] = [];
+  if (lyricist && composer && lyricist === composer) {
+    infoParts.push(`词/曲：${lyricist}`);
+  } else {
+    if (lyricist) {
+      infoParts.push(`作词：${lyricist}`);
+    }
+    if (composer) {
+      infoParts.push(`作曲：${composer}`);
+    }
+  }
+  if (singer) {
+    infoParts.push(`演唱：${singer}`);
+  }
+
+  const infoLine = infoParts.filter((item): item is string => Boolean(item)).join('  ·  ');
 
   useEffect(() => {
     if (!song?.audioUrl) {
@@ -234,6 +270,10 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
       return -1;
     }
 
+    if (currentTime < lyrics[0].time) {
+      return -1;
+    }
+
     for (let i = 0; i < lyrics.length; i += 1) {
       const current = lyrics[i];
       const next = lyrics[i + 1];
@@ -242,7 +282,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
       }
     }
 
-    return 0;
+    return lyrics.length - 1;
   }, [currentTime, lyrics]);
 
   useEffect(() => {
@@ -326,6 +366,29 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
     setUploadHint('已恢复默认歌词');
   };
 
+  const exportCurrentLyricsAsLrc = () => {
+    if (typeof window === 'undefined' || lyrics.length === 0 || !song) {
+      return;
+    }
+
+    const lrcContent = lyrics
+      .slice()
+      .sort((a, b) => a.time - b.time)
+      .map((line) => `[${formatLrcTimestamp(line.time)}]${line.text}`)
+      .join('\n');
+
+    const blob = new Blob([lrcContent], { type: 'text/plain;charset=utf-8' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${sanitizeLrcFilename(song.title)}.lrc`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+    setUploadHint('已导出 LRC 文件');
+  };
+
   if (!song || !detail) {
     return (
       <div className="min-h-screen bg-[#220706] px-6 py-8 text-white">
@@ -369,20 +432,31 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
             <p className="mt-1 truncate text-[11px] text-white/70">{infoLine}</p>
           </div>
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="flex h-9 items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 text-[11px] text-white/85 transition hover:bg-white/15"
-            aria-label="歌词上传"
-          >
-            <Upload size={14} />
-            歌词上传
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="flex h-9 items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 text-[11px] text-white/85 transition hover:bg-white/15"
+              aria-label="歌词上传"
+            >
+              <Upload size={14} />
+              上传
+            </button>
+            <button
+              type="button"
+              onClick={exportCurrentLyricsAsLrc}
+              className="flex h-9 items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 text-[11px] text-white/85 transition hover:bg-white/15"
+              aria-label="导出LRC"
+            >
+              <Download size={14} />
+              导出
+            </button>
+          </div>
           <input ref={fileInputRef} type="file" accept=".lrc,.txt,text/plain" className="hidden" onChange={(event) => void handleUploadLyrics(event)} />
         </header>
 
         <div className="relative z-10 mt-1.5 flex items-center justify-center gap-3 text-[10px] text-white/55">
-          <span>{uploadHint}</span>
+          <span>{uploadHint || '支持上传 SOFA 导出的 LRC'}</span>
           {uploadedLyrics && (
             <button type="button" onClick={restoreDefaultLyrics} className="rounded-full border border-white/20 px-2 py-0.5 text-white/75">
               恢复默认
@@ -390,10 +464,14 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
           )}
         </div>
 
-        <section className="relative z-10 mt-2 min-h-0 flex-1 overflow-hidden">
-          <div className="pointer-events-none absolute inset-x-0 top-0 z-10 h-16 bg-gradient-to-b from-[#5b1012] to-transparent" />
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-16 bg-gradient-to-t from-[#340708] to-transparent" />
-          <div className="h-full overflow-y-auto scroll-smooth px-1 pb-5 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <section
+            className="relative z-10 mt-2 min-h-0 flex-1"
+            style={{
+              maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%, black 85%, transparent 100%)',
+            }}
+          >
+            <div className="h-full overflow-y-auto scroll-smooth px-1 pb-5 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             <div className="pb-20 pt-12">
               {lyrics.map((line, index) => {
                 const isActive = index === activeIndex;
@@ -406,12 +484,11 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
                     }}
                     onClick={() => seekTo(line.time)}
                     className={`mb-2 block w-full transition-all duration-500 ${
-                      isActive ? 'scale-[1.005] rounded-lg bg-white/11 px-2.5 py-2 shadow-[0_10px_28px_rgba(0,0,0,0.24)]' : 'px-3 py-1.5 opacity-75'
+                      isActive ? 'scale-[1.01] bg-transparent px-2.5 py-2' : 'bg-transparent px-3 py-1.5 opacity-75'
                     }`}
                   >
-                    {isActive && <span className="mb-1 block text-left text-[11px] text-white/75">{formatTime(line.time)}</span>}
                     <p
-                      className={`text-center ${isActive ? 'text-[20px] leading-8 text-[#f9e7dc]' : 'text-[16px] leading-8 text-white/35'}`}
+                      className={`text-center ${isActive ? 'text-[22px] font-medium leading-9 text-[#f9e7dc]' : 'text-[17px] leading-8 text-white/35'}`}
                       style={{ fontFamily: '"Noto Serif SC", "Songti SC", serif' }}
                     >
                       {line.text}
