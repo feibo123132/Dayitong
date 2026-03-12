@@ -1,4 +1,4 @@
-﻿import { Calendar, Check, ChevronDown, ChevronRight, Clock3, MapPin, Menu, Sparkles } from 'lucide-react';
+import { Calendar, Check, ChevronDown, ChevronRight, Clock3, MapPin, Menu, Sparkles } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -245,7 +245,7 @@ export const ActivityPage = () => {
                 aria-hidden="true"
                 className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
               />
-              <div className="absolute inset-0 bg-gradient-to-br from-black/55 via-black/35 to-black/15 pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-br from-black/25 via-black/15 to-black/5 pointer-events-none" />
             </>
           ) : null}
 

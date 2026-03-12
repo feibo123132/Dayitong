@@ -43,13 +43,10 @@ export const AppStorePage = () => {
   return (
     <div className="min-h-screen bg-teal-50/50">
       {/* Top Banner */}
-      <div className="relative h-48 w-full bg-gradient-to-r from-jieyou-mint to-teal-400 overflow-hidden rounded-b-[2rem] shadow-md">
-        <div className="absolute inset-0 opacity-30 bg-[url('/images/app-store/app-store-banner.png')] bg-cover bg-center"></div>
+      <div className="relative h-48 w-full overflow-hidden rounded-b-[2rem] shadow-md">
+        <div className="absolute inset-0 bg-[url('/images/app-store/app-store-banner.png')] bg-cover bg-center"></div>
         
-        <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
-          <h1 className="text-3xl font-bold text-white drop-shadow-md tracking-wide">APP 铺子</h1>
-          <p className="text-white/80 mt-2 text-sm">探索更多有趣应用</p>
-        </div>
+        {/* Banner Text Overlay Removed */}
 
         {/* Back Button */}
         <button 

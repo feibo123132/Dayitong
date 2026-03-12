@@ -129,8 +129,8 @@ export const FESTIVAL_TEMPLATES: FestivalTemplate[] = [
     location: '校园草地 · 线上同步',
     startAt: new Date('2026-03-20T00:00:00+08:00').getTime(),
     endAt: new Date('2026-04-20T23:59:59+08:00').getTime(),
-    decoA: '🌿',
-    decoB: '🌸',
+    decoA: '',
+    decoB: '',
     backgroundImage: 'images/festivals/spring-equinox-2026-bg.png',
     theme: {
       heroCardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-100 via-lime-50 to-white',

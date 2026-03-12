@@ -1,4 +1,4 @@
-﻿import { ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock3, Gift, MapPin, Sparkles } from 'lucide-react';
+import { ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock3, Gift, MapPin, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
@@ -136,7 +136,7 @@ export const ActivityDetailPage = () => {
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover"
               />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/55 via-black/35 to-black/15" />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-black/25 via-black/15 to-black/5" />
             </>
           ) : null}
 
