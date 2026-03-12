@@ -1,6 +1,5 @@
 import {
   ChevronDown,
-  Download,
   Heart,
   ListMusic,
   MicOff,
@@ -9,7 +8,6 @@ import {
   RotateCcw,
   SkipBack,
   SkipForward,
-  Upload,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -388,6 +386,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
     window.URL.revokeObjectURL(url);
     setUploadHint('已导出 LRC 文件');
   };
+  void exportCurrentLyricsAsLrc;
 
   if (!song || !detail) {
     return (

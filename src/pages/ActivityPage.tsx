@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useActivityStore } from '../store/useActivityStore';
-import { FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus } from './activityData';
+import { ACTIVITY_MENU_GROUPS, FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus } from './activityData';
 
 type FestivalCulture = {
   quote: string;
@@ -47,6 +47,16 @@ const FESTIVAL_CULTURE_MAP: Record<string, FestivalCulture> = {
     cultureCardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-50 via-cyan-50 to-white',
     customTagClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
   },
+  'spring-equinox-2026': {
+    quote: '春分雨脚落声微，柳岸斜风带客归。',
+    source: '唐·徐铉《七绝·苏醒》',
+    summary: '春分昼夜平分，万物舒展，适合踏青、迎春和记录新的开始。',
+    customs: ['竖蛋', '踏青', '放风筝', '吃春菜'],
+    customsImageName: 'spring-equinox-customs-overview.png',
+    customsWarmMessage: '愿你在春风里轻装上阵，把新的希望种进每一天。',
+    cultureCardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-50 via-lime-50 to-white',
+    customTagClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+  },
 };
 
 export const ActivityPage = () => {
@@ -55,10 +65,20 @@ export const ActivityPage = () => {
   const { completedTaskIds, loadProgress, resetProgress, isLoading, error } = useActivityStore();
   const [now, setNow] = useState(() => Date.now());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isFestivalMenuExpanded, setIsFestivalMenuExpanded] = useState(false);
+  const [expandedMenuGroupIds, setExpandedMenuGroupIds] = useState<string[]>([]);
   const [selectedFestivalId, setSelectedFestivalId] = useState(FESTIVAL_TEMPLATES[0].id);
   const [brokenCustomImageByFestival, setBrokenCustomImageByFestival] = useState<Record<string, boolean>>({});
   const menuRef = useRef<HTMLDivElement | null>(null);
+
+  const festivalMap = useMemo(() => new Map(FESTIVAL_TEMPLATES.map((item) => [item.id, item])), []);
+  const menuGroups = useMemo(() => {
+    return ACTIVITY_MENU_GROUPS.map((group) => ({
+      ...group,
+      festivals: group.festivalIds
+        .map((festivalId) => festivalMap.get(festivalId))
+        .filter((item): item is (typeof FESTIVAL_TEMPLATES)[number] => Boolean(item)),
+    })).filter((group) => group.festivals.length > 0);
+  }, [festivalMap]);
 
   const userUid = user?.uid ?? null;
   const festival = FESTIVAL_TEMPLATES.find((item) => item.id === selectedFestivalId) ?? FESTIVAL_TEMPLATES[0];
@@ -132,11 +152,20 @@ export const ActivityPage = () => {
 
   const handleMenuToggle = () => {
     if (!isMenuOpen) {
-      setIsFestivalMenuExpanded(false);
+      setExpandedMenuGroupIds([]);
       setIsMenuOpen(true);
       return;
     }
     setIsMenuOpen(false);
+  };
+
+  const toggleMenuGroup = (groupId: string) => {
+    setExpandedMenuGroupIds((current) => {
+      if (current.includes(groupId)) {
+        return current.filter((id) => id !== groupId);
+      }
+      return [...current, groupId];
+    });
   };
 
   return (
@@ -157,35 +186,44 @@ export const ActivityPage = () => {
 
             {isMenuOpen ? (
               <div className="absolute right-0 mt-2 w-48 rounded-xl border border-gray-100 bg-white p-2 shadow-lg z-20">
-                <button
-                  type="button"
-                  onClick={() => setIsFestivalMenuExpanded((current) => !current)}
-                  className="w-full rounded-lg px-2 py-2 text-left text-sm text-slate-800 hover:bg-gray-50 transition-colors flex items-center justify-between"
-                >
-                  <span className="font-medium">节日活动</span>
-                  {isFestivalMenuExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                </button>
-
-                {isFestivalMenuExpanded ? (
-                  <div className="mt-1 pl-2 space-y-1">
-                    {FESTIVAL_TEMPLATES.map((item) => {
-                      const active = item.id === festival.id;
-                      return (
+                <div className="space-y-1">
+                  {menuGroups.map((group, groupIndex) => {
+                    const isExpanded = expandedMenuGroupIds.includes(group.id);
+                    return (
+                      <div key={group.id} className={groupIndex > 0 ? 'border-t border-gray-100 pt-1' : ''}>
                         <button
-                          key={item.id}
                           type="button"
-                          onClick={() => handleFestivalSwitch(item.id)}
-                          className={`w-full px-2 py-2 rounded-lg text-left text-sm flex items-center justify-between transition-colors ${
-                            active ? festival.theme.menuActiveClass : 'text-slate-700 hover:bg-gray-50'
-                          }`}
+                          onClick={() => toggleMenuGroup(group.id)}
+                          className="w-full rounded-lg px-2 py-2 text-left text-sm text-slate-800 hover:bg-gray-50 transition-colors flex items-center justify-between"
                         >
-                          <span>{item.menuLabel}</span>
-                          {active ? <Check size={14} /> : null}
+                          <span className="font-medium">{group.label}</span>
+                          {isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                         </button>
-                      );
-                    })}
-                  </div>
-                ) : null}
+
+                        {isExpanded ? (
+                          <div className="mt-1 pl-2 space-y-1">
+                            {group.festivals.map((item) => {
+                              const active = item.id === festival.id;
+                              return (
+                                <button
+                                  key={item.id}
+                                  type="button"
+                                  onClick={() => handleFestivalSwitch(item.id)}
+                                  className={`w-full px-2 py-2 rounded-lg text-left text-sm flex items-center justify-between transition-colors ${
+                                    active ? item.theme.menuActiveClass : 'text-slate-700 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  <span>{item.menuLabel}</span>
+                                  {active ? <Check size={14} /> : null}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             ) : null}
           </div>

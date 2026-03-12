@@ -44,7 +44,7 @@ export const AppStorePage = () => {
     <div className="min-h-screen bg-teal-50/50">
       {/* Top Banner */}
       <div className="relative h-48 w-full bg-gradient-to-r from-jieyou-mint to-teal-400 overflow-hidden rounded-b-[2rem] shadow-md">
-        <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center"></div>
+        <div className="absolute inset-0 opacity-30 bg-[url('/images/app-store/app-store-banner.png')] bg-cover bg-center"></div>
         
         <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
           <h1 className="text-3xl font-bold text-white drop-shadow-md tracking-wide">APP 铺子</h1>

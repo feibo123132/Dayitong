@@ -1,6 +1,5 @@
-﻿﻿import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
-import { PointsRewardCard } from './PointsRewardCard';
 import { CurrentActivity } from './CurrentActivity';
 
 type CarouselItem = 
@@ -37,8 +36,11 @@ const CAROUSEL_ITEMS: CarouselItem[] = [
   },
   {
     id: 2,
-    type: 'component',
-    component: <PointsRewardCard />
+    image: 'bg-gradient-to-r from-amber-200 to-orange-400',
+    imageUrl: `${import.meta.env.BASE_URL}images/home/carousel-2.png`,
+    textColor: 'text-white',
+    title: '',
+    subtitle: ''
   },
   {
     id: 3,

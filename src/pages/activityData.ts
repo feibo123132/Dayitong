@@ -50,6 +50,12 @@ export type FestivalTemplate = {
   rewards: ActivityReward[];
 };
 
+export type ActivityMenuGroup = {
+  id: string;
+  label: string;
+  festivalIds: string[];
+};
+
 export const FESTIVAL_TEMPLATES: FestivalTemplate[] = [
   {
     id: 'lantern-festival-2026',
@@ -112,6 +118,69 @@ export const FESTIVAL_TEMPLATES: FestivalTemplate[] = [
       { id: 'r1', title: '花灯新星徽章', description: '完成 1 个任务解锁', threshold: 1 },
       { id: 'r2', title: '元宵猜谜能手称号', description: '完成 2 个任务解锁', threshold: 2 },
       { id: 'r3', title: '解忧夜游达人称号', description: '完成全部任务解锁', threshold: 3 },
+    ],
+  },
+  {
+    id: 'spring-equinox-2026',
+    menuLabel: '春分',
+    title: '春分踏青活动季',
+    subtitle: '二十四节气任务中心',
+    periodText: '2026.03.20 - 2026.04.20',
+    location: '校园草地 · 线上同步',
+    startAt: new Date('2026-03-20T00:00:00+08:00').getTime(),
+    endAt: new Date('2026-04-20T23:59:59+08:00').getTime(),
+    decoA: '🌿',
+    decoB: '🌸',
+    backgroundImage: 'images/festivals/spring-equinox-2026-bg.png',
+    theme: {
+      heroCardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-100 via-lime-50 to-white',
+      subtitleBadgeClass: 'bg-emerald-500/10 text-emerald-700',
+      countdownClass: 'bg-emerald-500/10 text-emerald-700',
+      progressBarClass: 'bg-gradient-to-r from-emerald-500 to-lime-400',
+      scoreTagClass: 'bg-emerald-50 text-emerald-700',
+      actionButtonClass: 'bg-[#16a34a] text-white hover:bg-[#15803d]',
+      rewardUnlockedCardClass: 'border-emerald-200 bg-emerald-50/70',
+      rewardUnlockedIconClass: 'bg-emerald-100 text-emerald-700',
+      rewardUnlockedTitleClass: 'text-emerald-700',
+      rewardUnlockedStatusClass: 'text-emerald-600',
+      menuActiveClass: 'bg-emerald-50 text-emerald-700',
+    },
+    tasks: [
+      {
+        id: 'checkin',
+        title: '春分签到互动',
+        description: '到达春分活动区完成签到打卡，点亮你的节气纪念章。',
+        points: 20,
+        badge: '节气打卡',
+        icon: MapPin,
+        iconColor: 'text-emerald-500',
+        bgColor: 'bg-emerald-50',
+      },
+      {
+        id: 'guess-song',
+        title: '春日听歌识曲',
+        description: '参与一轮春日主题听歌识曲挑战，解锁节气旋律。',
+        points: 20,
+        badge: '春日旋律',
+        icon: Music2,
+        iconColor: 'text-lime-600',
+        bgColor: 'bg-lime-50',
+      },
+      {
+        id: 'festival-message',
+        title: '春分寄语留言',
+        description: '写下一句春日祝福，生成你的节气纪念卡片。',
+        points: 20,
+        badge: '春日寄语',
+        icon: MessageSquareHeart,
+        iconColor: 'text-teal-500',
+        bgColor: 'bg-teal-50',
+      },
+    ],
+    rewards: [
+      { id: 'r1', title: '春分新芽徽章', description: '完成 1 个任务解锁', threshold: 1 },
+      { id: 'r2', title: '节气知音称号', description: '完成 2 个任务解锁', threshold: 2 },
+      { id: 'r3', title: '春日解忧达人称号', description: '完成全部任务解锁', threshold: 3 },
     ],
   },
   {
@@ -237,6 +306,19 @@ export const FESTIVAL_TEMPLATES: FestivalTemplate[] = [
       { id: 'r2', title: '校园旋律收藏家称号', description: '完成 2 个任务解锁', threshold: 2 },
       { id: 'r3', title: '毕业季解忧达人称号', description: '完成全部任务解锁', threshold: 3 },
     ],
+  },
+];
+
+export const ACTIVITY_MENU_GROUPS: ActivityMenuGroup[] = [
+  {
+    id: 'festival-events',
+    label: '节日活动',
+    festivalIds: ['lantern-festival-2026', 'mid-autumn-2026', 'graduation-season-2026'],
+  },
+  {
+    id: 'solar-terms',
+    label: '二十四节气',
+    festivalIds: ['spring-equinox-2026'],
   },
 ];
 
