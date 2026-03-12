@@ -432,31 +432,12 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
             <p className="mt-1 truncate text-[11px] text-white/70">{infoLine}</p>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="flex h-9 items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 text-[11px] text-white/85 transition hover:bg-white/15"
-              aria-label="歌词上传"
-            >
-              <Upload size={14} />
-              上传
-            </button>
-            <button
-              type="button"
-              onClick={exportCurrentLyricsAsLrc}
-              className="flex h-9 items-center gap-1 rounded-full border border-white/20 bg-white/10 px-2.5 text-[11px] text-white/85 transition hover:bg-white/15"
-              aria-label="导出LRC"
-            >
-              <Download size={14} />
-              导出
-            </button>
-          </div>
+          <div className="w-9" />
           <input ref={fileInputRef} type="file" accept=".lrc,.txt,text/plain" className="hidden" onChange={(event) => void handleUploadLyrics(event)} />
         </header>
 
         <div className="relative z-10 mt-1.5 flex items-center justify-center gap-3 text-[10px] text-white/55">
-          <span>{uploadHint || '支持上传 SOFA 导出的 LRC'}</span>
+          <span>{uploadHint}</span>
           {uploadedLyrics && (
             <button type="button" onClick={restoreDefaultLyrics} className="rounded-full border border-white/20 px-2 py-0.5 text-white/75">
               恢复默认
@@ -472,7 +453,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
             }}
           >
             <div className="h-full overflow-y-auto scroll-smooth px-1 pb-5 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="pb-20 pt-12">
+            <div className="pb-64 pt-12">
               {lyrics.map((line, index) => {
                 const isActive = index === activeIndex;
                 return (
@@ -488,7 +469,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
                     }`}
                   >
                     <p
-                      className={`text-center ${isActive ? 'text-[22px] font-medium leading-9 text-[#f9e7dc]' : 'text-[17px] leading-8 text-white/35'}`}
+                      className={`text-center ${isActive ? 'text-[20px] font-medium leading-8 text-[#f9e7dc]' : 'text-[17px] leading-8 text-white/35'}`}
                       style={{ fontFamily: '"Noto Serif SC", "Songti SC", serif' }}
                     >
                       {line.text}
