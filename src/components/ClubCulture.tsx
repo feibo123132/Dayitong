@@ -1,11 +1,11 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { ChevronRight } from 'lucide-react';
 
 const CULTURE_LINES = [
   {
     title: '一念',
     label: '情绪疗愈',
-    content: '现实世界是足够有趣的，让音乐成为我们疗愈情绪的好伙伴吧。',
+    content: '世界是足够有趣的，让音乐成为我们疗愈情绪的好伙伴吧。',
   },
   {
     title: '一句',

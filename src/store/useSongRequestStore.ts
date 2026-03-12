@@ -1,6 +1,9 @@
 import { create } from 'zustand';
 import { db, ensureAuth } from '../lib/cloudbase';
 
+const SONG_REQUEST_COLLECTION = 'Dayitong_song_requests';
+export const TRASH_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+
 export interface SongRequest {
   id: string; // Mapped from _id
   songName: string;
@@ -9,6 +12,7 @@ export interface SongRequest {
   status: 'pending' | 'accepted' | 'playing';
   likes: number;
   createdAt: number;
+  deletedAt?: number;
 }
 
 interface SongRequestState {
@@ -20,7 +24,10 @@ interface SongRequestState {
   likeRequest: (id: string) => Promise<void>;
   updateStatus: (id: string, status: SongRequest['status']) => Promise<void>;
   updateRequest: (id: string, data: Partial<SongRequest>) => Promise<void>;
-  deleteRequest: (id: string) => Promise<void>;
+  deleteRequest: (id: string) => Promise<void>; // Soft delete
+  restoreRequest: (id: string) => Promise<void>;
+  permanentDeleteRequest: (id: string) => Promise<void>;
+  cleanupTrash: () => Promise<void>;
 }
 
 interface DbListResponse<T> {
@@ -83,14 +90,14 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await ensureAuth();
-      const res = (await db.collection('Dayitong_song_requests').orderBy('createdAt', 'desc').get()) as DbListResponse<SongRequestDoc>;
+      const res = (await db.collection(SONG_REQUEST_COLLECTION).orderBy('createdAt', 'desc').get()) as DbListResponse<SongRequestDoc>;
       let requests = res.data.map(mapSongRequestDoc);
 
       if (requests.length === 0) {
         console.log('Initializing song_requests with mock data...');
-        const addPromises = INITIAL_REQUESTS.map(req => db.collection('Dayitong_song_requests').add(req));
+        const addPromises = INITIAL_REQUESTS.map((req) => db.collection(SONG_REQUEST_COLLECTION).add(req));
         await Promise.all(addPromises);
-        const newRes = (await db.collection('Dayitong_song_requests').orderBy('createdAt', 'desc').get()) as DbListResponse<SongRequestDoc>;
+        const newRes = (await db.collection(SONG_REQUEST_COLLECTION).orderBy('createdAt', 'desc').get()) as DbListResponse<SongRequestDoc>;
         requests = newRes.data.map(mapSongRequestDoc);
       }
       
@@ -115,7 +122,7 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
         likes: 0,
         createdAt: Date.now()
       };
-      await db.collection('Dayitong_song_requests').add(newRequest);
+      await db.collection(SONG_REQUEST_COLLECTION).add(newRequest);
       get().fetchRequests();
     } catch (err) {
       console.error('Add request failed:', err);
@@ -125,8 +132,11 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   likeRequest: async (id) => {
     try {
       await ensureAuth();
+      const target = get().requests.find((item) => item.id === id);
+      if (!target || target.deletedAt) return;
+
       const command = db.command;
-      await db.collection('Dayitong_song_requests').doc(id).update({
+      await db.collection(SONG_REQUEST_COLLECTION).doc(id).update({
         likes: command.inc(1)
       });
       get().fetchRequests();
@@ -138,7 +148,10 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   updateStatus: async (id, status) => {
     try {
       await ensureAuth();
-      await db.collection('Dayitong_song_requests').doc(id).update({ status });
+      const target = get().requests.find((item) => item.id === id);
+      if (!target || target.deletedAt) return;
+
+      await db.collection(SONG_REQUEST_COLLECTION).doc(id).update({ status });
       get().fetchRequests();
     } catch (err) {
       console.error('Update status failed:', err);
@@ -148,7 +161,12 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   updateRequest: async (id, data) => {
     try {
       await ensureAuth();
-      await db.collection('Dayitong_song_requests').doc(id).update(data);
+      const target = get().requests.find((item) => item.id === id);
+      if (!target || target.deletedAt) return;
+
+      const safeData = { ...data };
+      delete safeData.id;
+      await db.collection(SONG_REQUEST_COLLECTION).doc(id).update(safeData);
       get().fetchRequests();
     } catch (err) {
       console.error('Update request failed:', err);
@@ -156,12 +174,85 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   deleteRequest: async (id) => {
+    const now = Date.now();
+    const previous = get().requests;
+    set((state) => ({
+      requests: state.requests.map((request) =>
+        request.id === id ? { ...request, deletedAt: now } : request
+      ),
+    }));
+
     try {
       await ensureAuth();
-      await db.collection('Dayitong_song_requests').doc(id).remove();
-      get().fetchRequests();
+      await db.collection(SONG_REQUEST_COLLECTION).doc(id).update({ deletedAt: now });
     } catch (err) {
       console.error('Delete request failed:', err);
+      set({ requests: previous });
+      await get().fetchRequests();
     }
-  }
+  },
+
+  restoreRequest: async (id) => {
+    const previous = get().requests;
+    set((state) => ({
+      requests: state.requests.map((request) => {
+        if (request.id !== id) return request;
+        const restored = { ...request };
+        delete restored.deletedAt;
+        return restored;
+      }),
+    }));
+
+    try {
+      await ensureAuth();
+      const command = db.command;
+      await db.collection(SONG_REQUEST_COLLECTION).doc(id).update({
+        deletedAt: command.remove(),
+      });
+    } catch (err) {
+      console.error('Restore request failed:', err);
+      set({ requests: previous });
+      await get().fetchRequests();
+    }
+  },
+
+  permanentDeleteRequest: async (id) => {
+    const previous = get().requests;
+    set((state) => ({
+      requests: state.requests.filter((request) => request.id !== id),
+    }));
+
+    try {
+      await ensureAuth();
+      await db.collection(SONG_REQUEST_COLLECTION).doc(id).remove();
+    } catch (err) {
+      console.error('Permanent delete request failed:', err);
+      set({ requests: previous });
+      await get().fetchRequests();
+    }
+  },
+
+  cleanupTrash: async () => {
+    try {
+      await ensureAuth();
+      const now = Date.now();
+      const res = (await db.collection(SONG_REQUEST_COLLECTION).get()) as DbListResponse<SongRequestDoc>;
+
+      const expiredIds = res.data
+        .filter((request) => typeof request.deletedAt === 'number' && now - request.deletedAt > TRASH_RETENTION_MS)
+        .map((request) => request._id);
+
+      if (expiredIds.length === 0) {
+        return;
+      }
+
+      await Promise.allSettled(expiredIds.map((id) => db.collection(SONG_REQUEST_COLLECTION).doc(id).remove()));
+      const expiredIdSet = new Set(expiredIds);
+      set((state) => ({
+        requests: state.requests.filter((request) => !expiredIdSet.has(request.id)),
+      }));
+    } catch (err) {
+      console.error('Cleanup song request trash failed:', err);
+    }
+  },
 }));

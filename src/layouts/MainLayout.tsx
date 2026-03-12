@@ -23,11 +23,12 @@ export const MainLayout = () => {
 
     // Initialize Auth first
     useAuthStore.getState().initAuth().then(() => {
+      const songRequestStore = useSongRequestStore.getState();
       // Then fetch data
       void Promise.allSettled([
         useGuessMusicStore.getState().fetchUsers(),
         useRankingStore.getState().fetchUsers(),
-        useSongRequestStore.getState().fetchRequests(),
+        songRequestStore.cleanupTrash().then(() => songRequestStore.fetchRequests()),
       ]);
     });
   }, []);

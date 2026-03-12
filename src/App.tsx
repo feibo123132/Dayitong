@@ -1,4 +1,4 @@
-﻿import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { ActivityDetailPage } from './pages/ActivityDetailPage';
 import { ActivityCheckinPage } from './pages/ActivityCheckinPage';
 import { MainLayout } from './layouts/MainLayout';
@@ -19,6 +19,7 @@ import { RankingUserDetailPage } from './pages/RankingUserDetailPage';
 import { RoadshowPage } from './pages/RoadshowPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { SongRequestPage } from './pages/SongRequestPage';
+import { SongRequestTrashPage } from './pages/SongRequestTrashPage';
 import { UserPage } from './pages/UserPage';
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
           <Route path="guess-music-locations" element={<LocationSelectPage />} />
           <Route path="guess-music/history/:userId" element={<GuessUserHistoryPage />} />
           <Route path="song-request" element={<SongRequestPage />} />
+          <Route path="song-request/trash" element={<SongRequestTrashPage />} />
           <Route path="roadshow" element={<RoadshowPage />} />
           <Route path="app-store" element={<AppStorePage />} />
           <Route path="original-music-box" element={<OriginalMusicBoxPage />} />

@@ -44,8 +44,19 @@ export const ClubMembers = () => {
             </div>
           ))}
           {!isExpanded && (
-            <div className="text-center pt-2 text-xs text-blue-400">
+            <div 
+              className="text-center pt-2 text-xs text-blue-400 cursor-pointer hover:text-blue-500 transition-colors"
+              onClick={() => setIsExpanded(true)}
+            >
               ... 展开查看更多 ...
+            </div>
+          )}
+          {isExpanded && (
+            <div 
+              className="text-center pt-2 text-xs text-blue-400 cursor-pointer hover:text-blue-500 transition-colors"
+              onClick={() => setIsExpanded(false)}
+            >
+              收起名单
             </div>
           )}
         </div>

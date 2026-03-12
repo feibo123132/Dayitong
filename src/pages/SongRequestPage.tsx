@@ -1,12 +1,12 @@
-﻿import { ArrowLeft, Clock, Flame, Heart, MessageCircleHeart, Music, Send, Edit2, Trash2, Menu } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, Clock, Flame, Heart, MessageCircleHeart, Music, Send, Edit2, Trash2, Menu, RefreshCcw } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSongRequestStore } from '../store/useSongRequestStore';
+import { TRASH_RETENTION_MS, useSongRequestStore } from '../store/useSongRequestStore';
 import type { SongRequest } from '../store/useSongRequestStore';
 
 export const SongRequestPage = () => {
   const navigate = useNavigate();
-  const { requests, addRequest, likeRequest, updateRequest, deleteRequest } = useSongRequestStore();
+  const { requests, addRequest, likeRequest, updateRequest, deleteRequest, fetchRequests } = useSongRequestStore();
   const [activeTab, setActiveTab] = useState<'latest' | 'hot'>('latest');
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -16,6 +16,10 @@ export const SongRequestPage = () => {
   const [songName, setSongName] = useState('');
   const [artist, setArtist] = useState('');
   const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    fetchRequests();
+  }, [fetchRequests]);
 
   const resetForm = () => {
     setEditingId(null);
@@ -60,12 +64,14 @@ export const SongRequestPage = () => {
   };
 
   const handleDelete = (id: string) => {
-    if (window.confirm('确定要删除这条点歌吗？')) {
+    if (window.confirm('确定要将这条点歌移入回收站吗？')) {
       deleteRequest(id);
     }
   };
 
-  const sortedRequests = [...requests].sort((a, b) => {
+  const visibleRequests = requests.filter((request) => !request.deletedAt);
+
+  const sortedRequests = [...visibleRequests].sort((a, b) => {
     if (activeTab === 'latest') {
       return b.createdAt - a.createdAt;
     }
@@ -128,8 +134,8 @@ export const SongRequestPage = () => {
             <div
               className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
               onClick={() => {
-                setIsEditing(!isEditing);
                 setShowMenu(false);
+                setIsEditing(!isEditing);
               }}
             >
               <Edit2 size={18} className="mr-3 text-blue-500" />
@@ -140,7 +146,7 @@ export const SongRequestPage = () => {
               className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
               onClick={() => {
                 setShowMenu(false);
-                alert('回收站功能开发中...');
+                navigate('/song-request/trash');
               }}
             >
               <Trash2 size={18} className="mr-3 text-red-500" />
@@ -182,7 +188,7 @@ export const SongRequestPage = () => {
             onClick={() => {
               if (!isEditing) openEditForm(req);
             }}
-            className={`bg-white rounded-2xl p-4 shadow-sm border border-pink-100 relative overflow-hidden group transition-all ${
+            className={`rounded-2xl p-4 shadow-sm border relative overflow-hidden group transition-all bg-white border-pink-100 ${
               isEditing ? 'cursor-default' : 'cursor-pointer hover:shadow-md'
             }`}
           >
@@ -201,7 +207,7 @@ export const SongRequestPage = () => {
               </div>
             )}
 
-            <div className="flex justify-end items-center text-gray-400 text-xs">
+            <div className="flex justify-end items-center text-gray-400 text-xs gap-3">
               {isEditing ? (
                 <div className="flex space-x-3">
                   <button
@@ -238,6 +244,12 @@ export const SongRequestPage = () => {
             </div>
           </div>
         ))}
+
+        {sortedRequests.length === 0 ? (
+          <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-400">
+            暂无点歌记录
+          </div>
+        ) : null}
 
         <div className="h-36"></div>
       </div>

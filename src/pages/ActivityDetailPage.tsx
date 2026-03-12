@@ -5,16 +5,14 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useActivityStore } from '../store/useActivityStore';
 import { FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus, type ActivityTask } from './activityData';
 
-const LANTERN_FESTIVAL_ID = 'lantern-festival-2026';
-
 export const ActivityDetailPage = () => {
   const { festivalId } = useParams<{ festivalId: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const { completedTaskIds, loadProgress, resetProgress, completeTask, isLoading, error } = useActivityStore();
   const [now, setNow] = useState(() => Date.now());
-  const [isTaskPanelCollapsed, setIsTaskPanelCollapsed] = useState(() => festivalId === LANTERN_FESTIVAL_ID);
-  const [isRewardsCollapsed, setIsRewardsCollapsed] = useState(() => festivalId === LANTERN_FESTIVAL_ID);
+  const [isTaskPanelCollapsed, setIsTaskPanelCollapsed] = useState(true);
+  const [isRewardsCollapsed, setIsRewardsCollapsed] = useState(true);
 
   const userUid = user?.uid ?? null;
   const festival = FESTIVAL_TEMPLATES.find((item) => item.id === festivalId);

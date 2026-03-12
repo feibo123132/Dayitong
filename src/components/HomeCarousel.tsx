@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { CurrentActivity } from './CurrentActivity';
 
 type CarouselItem = 
@@ -53,10 +54,16 @@ export const HomeCarousel = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentItem = CAROUSEL_ITEMS[currentIndex];
 
+  const nextSlide = () => {
+    setCurrentIndex((prev) => (prev + 1) % CAROUSEL_ITEMS.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + CAROUSEL_ITEMS.length) % CAROUSEL_ITEMS.length);
+  };
+
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentIndex((prev) => (prev + 1) % CAROUSEL_ITEMS.length);
-    }, 5000);
+    const timer = setInterval(nextSlide, 5000);
     return () => clearInterval(timer);
   }, []);
 
@@ -100,6 +107,28 @@ export const HomeCarousel = () => {
           )}
         </motion.div>
       </AnimatePresence>
+
+      {/* Navigation Arrows */}
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          prevSlide();
+        }}
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded-full bg-black/10 text-white/70 backdrop-blur-[2px] hover:bg-black/20 hover:text-white transition-all active:scale-90"
+        aria-label="Previous slide"
+      >
+        <ChevronLeft size={20} />
+      </button>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          nextSlide();
+        }}
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-20 p-1.5 rounded-full bg-black/10 text-white/70 backdrop-blur-[2px] hover:bg-black/20 hover:text-white transition-all active:scale-90"
+        aria-label="Next slide"
+      >
+        <ChevronRight size={20} />
+      </button>
 
       {/* Dots */}
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex space-x-1.5 z-20">
