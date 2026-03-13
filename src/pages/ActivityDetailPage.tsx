@@ -4,11 +4,13 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useActivityStore } from '../store/useActivityStore';
 import { FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus, type ActivityTask } from './activityData';
+import { isAdminEmail } from '../lib/permissions';
 
 export const ActivityDetailPage = () => {
   const { festivalId } = useParams<{ festivalId: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const isAdmin = isAdminEmail(user?.email);
   const { completedTaskIds, loadProgress, resetProgress, completeTask, isLoading, error } = useActivityStore();
   const [now, setNow] = useState(() => Date.now());
   const [isTaskPanelCollapsed, setIsTaskPanelCollapsed] = useState(true);
@@ -88,11 +90,13 @@ export const ActivityDetailPage = () => {
   })();
 
   const handleTaskClick = async (task: ActivityTask) => {
+    if (!isAdmin) return;
     if (status !== 'active') return;
     await completeTask(task.id, task.points);
   };
 
   const handleTaskAction = async (task: ActivityTask) => {
+    if (!isAdmin) return;
     if (task.id === 'checkin') {
       navigate(`/activity/${festival.id}/checkin`);
       return;
@@ -101,6 +105,7 @@ export const ActivityDetailPage = () => {
   };
 
   const getTaskActionText = (task: ActivityTask, isDone: boolean) => {
+    if (!isAdmin) return '仅可查看';
     if (task.id === 'checkin') return isDone ? '已签到' : '进入互动';
     if (isDone) return '已完成';
     if (status === 'upcoming') return '未开始';
@@ -198,7 +203,7 @@ export const ActivityDetailPage = () => {
             const Icon = task.icon;
             const isDone = completedTaskIds.includes(task.id);
             const isCheckinTask = task.id === 'checkin';
-            const disabled = isCheckinTask ? false : status !== 'active' || isDone;
+            const disabled = !isAdmin || (isCheckinTask ? false : status !== 'active' || isDone);
             const actionText = getTaskActionText(task, isDone);
             const actionButtonClass = isDone
               ? 'border border-emerald-100 bg-emerald-50 text-emerald-600 cursor-pointer'
@@ -214,9 +219,9 @@ export const ActivityDetailPage = () => {
                 className={`rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 ${
                   isTaskPanelCollapsed ? 'p-3' : 'p-4'
                 } ${isCheckinTask ? 'cursor-pointer hover:border-slate-300' : ''}`}
-                onClick={isCheckinTask ? () => navigate(`/activity/${festival.id}/checkin`) : undefined}
+                onClick={isAdmin && isCheckinTask ? () => navigate(`/activity/${festival.id}/checkin`) : undefined}
                 onKeyDown={
-                  isCheckinTask
+                  isAdmin && isCheckinTask
                     ? (event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault();
@@ -225,8 +230,8 @@ export const ActivityDetailPage = () => {
                       }
                     : undefined
                 }
-                role={isCheckinTask ? 'button' : undefined}
-                tabIndex={isCheckinTask ? 0 : undefined}
+                role={isAdmin && isCheckinTask ? 'button' : undefined}
+                tabIndex={isAdmin && isCheckinTask ? 0 : undefined}
               >
                 <div className={`flex gap-3 ${isTaskPanelCollapsed ? 'items-center' : 'items-start'}`}>
                   <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${task.bgColor}`}>

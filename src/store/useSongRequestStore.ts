@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { db, ensureAuth } from '../lib/cloudbase';
+import { EDIT_PERMISSION_DENIED_MESSAGE, isCurrentUserAdmin } from '../lib/permissions';
 
 const SONG_REQUEST_COLLECTION = 'Dayitong_song_requests';
 export const TRASH_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
@@ -93,7 +94,7 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
       const res = (await db.collection(SONG_REQUEST_COLLECTION).orderBy('createdAt', 'desc').get()) as DbListResponse<SongRequestDoc>;
       let requests = res.data.map(mapSongRequestDoc);
 
-      if (requests.length === 0) {
+      if (requests.length === 0 && isCurrentUserAdmin()) {
         console.log('Initializing song_requests with mock data...');
         const addPromises = INITIAL_REQUESTS.map((req) => db.collection(SONG_REQUEST_COLLECTION).add(req));
         await Promise.all(addPromises);
@@ -112,6 +113,10 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   addRequest: async (songName, artist, message) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const newRequest = {
@@ -130,6 +135,10 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   likeRequest: async (id) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const target = get().requests.find((item) => item.id === id);
@@ -146,6 +155,10 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   updateStatus: async (id, status) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const target = get().requests.find((item) => item.id === id);
@@ -159,6 +172,10 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   updateRequest: async (id, data) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const target = get().requests.find((item) => item.id === id);
@@ -174,6 +191,10 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   deleteRequest: async (id) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     const now = Date.now();
     const previous = get().requests;
     set((state) => ({
@@ -193,6 +214,10 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   restoreRequest: async (id) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     const previous = get().requests;
     set((state) => ({
       requests: state.requests.map((request) => {
@@ -217,6 +242,10 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   permanentDeleteRequest: async (id) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     const previous = get().requests;
     set((state) => ({
       requests: state.requests.filter((request) => request.id !== id),
@@ -233,6 +262,9 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   cleanupTrash: async () => {
+    if (!isCurrentUserAdmin()) {
+      return;
+    }
     try {
       await ensureAuth();
       const now = Date.now();

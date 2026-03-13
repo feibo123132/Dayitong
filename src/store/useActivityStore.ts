@@ -1,5 +1,6 @@
 ﻿import { create } from 'zustand';
 import { db, ensureAuth } from '../lib/cloudbase';
+import { EDIT_PERMISSION_DENIED_MESSAGE, isCurrentUserAdmin } from '../lib/permissions';
 
 export type ActivityTaskId = 'checkin' | 'guess-song' | 'festival-message';
 
@@ -102,7 +103,9 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
       const data = normalizeDbData<ActivityProgressDoc>(res);
 
       if (data.length === 0) {
-        await upsertProgress(uid, activityId, DEFAULT_PROGRESS);
+        if (isCurrentUserAdmin()) {
+          await upsertProgress(uid, activityId, DEFAULT_PROGRESS);
+        }
         set({ ...DEFAULT_PROGRESS, isLoading: false });
         return;
       }
@@ -122,6 +125,10 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
   },
 
   completeTask: async (taskId, points) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     const currentState = get();
     if (currentState.completedTaskIds.includes(taskId)) return;
 

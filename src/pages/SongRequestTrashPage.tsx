@@ -2,10 +2,13 @@ import { ArrowLeft, MessageCircleHeart, RefreshCcw, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TRASH_RETENTION_MS, useSongRequestStore } from '../store/useSongRequestStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 export const SongRequestTrashPage = () => {
   const navigate = useNavigate();
   const { requests, restoreRequest, permanentDeleteRequest, fetchRequests } = useSongRequestStore();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
   const [nowTimestamp, setNowTimestamp] = useState(() => Date.now());
 
   useEffect(() => {
@@ -20,12 +23,14 @@ export const SongRequestTrashPage = () => {
   }, []);
 
   const handleRestore = (id: string) => {
-    restoreRequest(id);
+    if (!isAdmin) return;
+    void restoreRequest(id);
   };
 
   const handlePermanentDelete = (id: string) => {
+    if (!isAdmin) return;
     if (window.confirm('确定要彻底删除这条点歌吗？此操作不可恢复。')) {
-      permanentDeleteRequest(id);
+      void permanentDeleteRequest(id);
     }
   };
 
@@ -100,7 +105,8 @@ export const SongRequestTrashPage = () => {
                       e.stopPropagation();
                       handleRestore(req.id);
                     }}
-                    className="inline-flex items-center text-emerald-500 hover:text-emerald-600"
+                    disabled={!isAdmin}
+                    className="inline-flex items-center text-emerald-500 hover:text-emerald-600 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <RefreshCcw size={14} className="mr-1" /> 恢复
                   </button>
@@ -109,7 +115,8 @@ export const SongRequestTrashPage = () => {
                       e.stopPropagation();
                       handlePermanentDelete(req.id);
                     }}
-                    className="inline-flex items-center text-red-500 hover:text-red-600"
+                    disabled={!isAdmin}
+                    className="inline-flex items-center text-red-500 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     <Trash2 size={14} className="mr-1" /> 彻底删除
                   </button>

@@ -89,11 +89,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
 
       const context = await auth.getVerification({ email });
-      if (typeof context.verification_id === 'string' && typeof context.is_user === 'boolean') {
+      if (typeof context.verification_id === 'string' && context.verification_id.trim()) {
         set({
           verificationContext: {
             verification_id: context.verification_id,
-            is_user: context.is_user,
+            // Some accounts may not return a strict boolean, default to false for sign-in payload.
+            is_user: typeof context.is_user === 'boolean' ? context.is_user : false,
           },
           isLoading: false,
         });

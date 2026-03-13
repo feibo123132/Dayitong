@@ -13,6 +13,8 @@ import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { SongLyricLine } from './originalMusicBoxData';
 import { getSongDetail, loadSongsFromStorage } from './originalMusicBoxData';
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 const LYRIC_UPLOAD_STORAGE_PREFIX = 'jieyou_uploaded_lyrics_';
 
@@ -158,6 +160,7 @@ type LyricsCarouselScreenProps = {
 
 const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
   const navigate = useNavigate();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lyricRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -333,6 +336,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
   };
 
   const handleUploadLyrics = async (event: ChangeEvent<HTMLInputElement>) => {
+    if (!isAdmin) return;
     const file = event.target.files?.[0];
     if (!file || typeof window === 'undefined') {
       return;
@@ -355,6 +359,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
   };
 
   const restoreDefaultLyrics = () => {
+    if (!isAdmin) return;
     if (typeof window === 'undefined') {
       return;
     }
@@ -432,12 +437,14 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
           </div>
 
           <div className="w-9" />
-          <input ref={fileInputRef} type="file" accept=".lrc,.txt,text/plain" className="hidden" onChange={(event) => void handleUploadLyrics(event)} />
+          {isAdmin ? (
+            <input ref={fileInputRef} type="file" accept=".lrc,.txt,text/plain" className="hidden" onChange={(event) => void handleUploadLyrics(event)} />
+          ) : null}
         </header>
 
         <div className="relative z-10 mt-1.5 flex items-center justify-center gap-3 text-[10px] text-white/55">
           <span>{uploadHint}</span>
-          {uploadedLyrics && (
+          {isAdmin && uploadedLyrics && (
             <button type="button" onClick={restoreDefaultLyrics} className="rounded-full border border-white/20 px-2 py-0.5 text-white/75">
               恢复默认
             </button>

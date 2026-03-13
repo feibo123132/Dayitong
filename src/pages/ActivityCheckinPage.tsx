@@ -4,6 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useActivityStore } from '../store/useActivityStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus } from './activityData';
+import { isAdminEmail } from '../lib/permissions';
 
 const HOLD_DURATION_MS = 3000;
 const CONFETTI_COLORS = ['#f97316', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#14b8a6', '#a855f7'];
@@ -61,6 +62,7 @@ export const ActivityCheckinPage = () => {
   const { festivalId } = useParams<{ festivalId: string }>();
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const isAdmin = isAdminEmail(user?.email);
   const { completedTaskIds, loadProgress, resetProgress, completeTask, isLoading, error } = useActivityStore();
 
   const [now, setNow] = useState(() => Date.now());
@@ -197,6 +199,7 @@ export const ActivityCheckinPage = () => {
   };
 
   const completeCheckin = async () => {
+    if (!isAdmin) return;
     if (isCompleting || isCheckedIn || status !== 'active') return;
     setIsCompleting(true);
     try {
@@ -226,6 +229,7 @@ export const ActivityCheckinPage = () => {
   };
 
   const startHolding = () => {
+    if (!isAdmin) return;
     if (status !== 'active' || isCheckedIn || isCompleting) return;
     holdActiveRef.current = true;
     holdStartRef.current = null;
@@ -239,6 +243,8 @@ export const ActivityCheckinPage = () => {
 
   const holdHint = isCheckedIn
     ? '已完成签到，可继续查看视频祝福'
+    : !isAdmin
+      ? '仅管理员可执行签到操作'
     : status !== 'active'
       ? '当前不在活动时间内，暂不可签到'
       : isHolding
@@ -284,9 +290,9 @@ export const ActivityCheckinPage = () => {
                 onPointerUp={stopHolding}
                 onPointerLeave={stopHolding}
                 onPointerCancel={stopHolding}
-                disabled={status !== 'active' || isCheckedIn || isCompleting}
+                disabled={!isAdmin || status !== 'active' || isCheckedIn || isCompleting}
                 className={`relative select-none touch-none rounded-full p-2 transition-transform ${
-                  status !== 'active' || isCompleting
+                  !isAdmin || status !== 'active' || isCompleting
                     ? 'cursor-not-allowed opacity-70'
                     : isCheckedIn
                       ? 'cursor-pointer'

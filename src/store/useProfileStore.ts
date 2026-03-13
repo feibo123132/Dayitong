@@ -1,5 +1,6 @@
 ﻿import { create } from 'zustand';
 import { db, ensureAuth } from '../lib/cloudbase';
+import { EDIT_PERMISSION_DENIED_MESSAGE, isCurrentUserAdmin } from '../lib/permissions';
 
 export type EditableProfileField = 'name' | 'gender' | 'hobby' | 'signature';
 
@@ -136,7 +137,9 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
       const res = (await collection.where({ uid }).limit(1).get()) as DbListResponse<ProfileDoc>;
 
       if (res.data.length === 0) {
-        await upsertProfileByUid(uid, DEFAULT_PROFILE);
+        if (isCurrentUserAdmin()) {
+          await upsertProfileByUid(uid, DEFAULT_PROFILE);
+        }
         set({ ...DEFAULT_PROFILE, isLoading: false });
         return;
       }
@@ -161,6 +164,10 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   },
 
   updateField: async (field, value) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     set((state) => ({
       ...state,
       [field]: value,
@@ -179,6 +186,10 @@ export const useProfileStore = create<ProfileState>((set, get) => ({
   },
 
   updateAvatar: async (avatarUrl) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     set((state) => ({
       ...state,
       avatarUrl,

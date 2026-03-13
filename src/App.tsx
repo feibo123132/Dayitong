@@ -9,7 +9,6 @@ import { GuessUserHistoryPage } from './pages/GuessUserHistoryPage';
 import { GuitarBeginnerPage } from './pages/GuitarBeginnerPage';
 import { Home } from './pages/Home';
 import { LyricsCarouselPage } from './pages/LyricsCarouselPage';
-import { LocationSelectPage } from './pages/LocationSelectPage';
 import { LoginPage } from './pages/LoginPage';
 import { OriginalMusicBoxPage } from './pages/OriginalMusicBoxPage';
 import { ProfileFieldEditPage } from './pages/ProfileFieldEditPage';
@@ -36,7 +35,6 @@ function App() {
           <Route path="ranking" element={<RankingPage />} />
           <Route path="ranking/:userId" element={<RankingUserDetailPage />} />
           <Route path="guess-music" element={<GuessMusicPage />} />
-          <Route path="guess-music-locations" element={<LocationSelectPage />} />
           <Route path="guess-music/history/:userId" element={<GuessUserHistoryPage />} />
           <Route path="song-request" element={<SongRequestPage />} />
           <Route path="song-request/trash" element={<SongRequestTrashPage />} />

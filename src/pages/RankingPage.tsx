@@ -3,15 +3,19 @@ import { LiveRanking } from '../components/LiveRanking';
 import { ArrowLeft, Edit2, Check, Plus, Menu, Gift } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRankingStore } from '../store/useRankingStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 export const RankingPage = () => {
   const navigate = useNavigate();
   const [isEditing, setIsEditing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const { addUser } = useRankingStore();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
 
   const handleAddUser = () => {
-    addUser('新用户', 0);
+    if (!isAdmin) return;
+    void addUser('新用户', 0);
   };
 
   return (
@@ -43,13 +47,15 @@ export const RankingPage = () => {
                 onClick={() => setShowMenu(false)}
               ></div>
               <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-xl shadow-lg z-20 border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
-                <div 
-                  className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
-                  onClick={() => { setIsEditing(!isEditing); setShowMenu(false); }}
-                >
-                  {isEditing ? <Check size={18} className="mr-3 text-green-500" /> : <Edit2 size={18} className="mr-3 text-blue-500" />}
-                  <span className="text-sm font-medium">{isEditing ? '完成编辑' : '编辑功能'}</span>
-                </div>
+                {isAdmin ? (
+                  <div
+                    className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
+                    onClick={() => { setIsEditing(!isEditing); setShowMenu(false); }}
+                  >
+                    {isEditing ? <Check size={18} className="mr-3 text-green-500" /> : <Edit2 size={18} className="mr-3 text-blue-500" />}
+                    <span className="text-sm font-medium">{isEditing ? '完成编辑' : '编辑功能'}</span>
+                  </div>
+                ) : null}
                 <div 
                   className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
                   onClick={() => {
@@ -66,9 +72,9 @@ export const RankingPage = () => {
         </div>
       </header>
 
-      <LiveRanking editable={isEditing} />
+      <LiveRanking editable={isAdmin && isEditing} />
 
-      {isEditing && (
+      {isAdmin && isEditing && (
         <button
           onClick={handleAddUser}
           className="w-full py-3 mt-4 rounded-xl border-2 border-dashed border-gray-300 text-gray-400 hover:border-jieyou-mint hover:text-jieyou-mint transition-colors flex items-center justify-center space-x-2"

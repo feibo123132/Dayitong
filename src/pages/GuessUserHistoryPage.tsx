@@ -1,21 +1,17 @@
 import { ArrowLeft, Calendar, Cloud, Edit2, MapPin, PartyPopper, Save, Smile, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useGuessMusicStore, type GuessLocationKey } from '../store/useGuessMusicStore';
 import type { HistoryRecord } from '../types/history';
-
-const getLocationKey = (value: string | null): GuessLocationKey => {
-  if (value === 'nanhu') return 'nanhu';
-  if (value === 'gx-garden') return 'gx-garden';
-  return 'gx-egg';
-};
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 export const GuessUserHistoryPage = () => {
   const navigate = useNavigate();
   const { userId } = useParams();
-  const [searchParams] = useSearchParams();
-  const locationKey = getLocationKey(searchParams.get('location'));
+  const locationKey: GuessLocationKey = 'gx-egg';
   const { users, updateUserHistory, setActiveLocation, isLoading } = useGuessMusicStore();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
 
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<HistoryRecord>>({});
@@ -28,6 +24,7 @@ export const GuessUserHistoryPage = () => {
   const history = user?.history ?? [];
 
   const startEdit = (record: HistoryRecord) => {
+    if (!isAdmin) return;
     setEditingId(record.id);
     setEditForm(record);
   };
@@ -38,6 +35,7 @@ export const GuessUserHistoryPage = () => {
   };
 
   const saveEdit = () => {
+    if (!isAdmin) return;
     if (!userId || !editingId) return;
     void updateUserHistory(userId, editingId, editForm);
     setEditingId(null);
@@ -94,7 +92,7 @@ export const GuessUserHistoryPage = () => {
               >
                 <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-jieyou-mint to-teal-300"></div>
 
-                {editingId === item.id ? (
+                {isAdmin && editingId === item.id ? (
                   <div className="pl-3 space-y-3">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-sm font-bold text-teal-600">编辑记录</span>
@@ -179,14 +177,16 @@ export const GuessUserHistoryPage = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button
-                        onClick={() => startEdit(item)}
-                        className="p-1.5 text-gray-400 hover:text-teal-500 hover:bg-teal-50 rounded-full transition-colors"
-                      >
-                        <Edit2 size={16} />
-                      </button>
-                    </div>
+                    {isAdmin ? (
+                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => startEdit(item)}
+                          className="p-1.5 text-gray-400 hover:text-teal-500 hover:bg-teal-50 rounded-full transition-colors"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                      </div>
+                    ) : null}
 
                     <div className="flex justify-between items-start mb-3 pl-3">
                       <div className="flex items-center text-gray-800 font-bold text-lg">

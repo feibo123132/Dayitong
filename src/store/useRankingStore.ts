@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { db, ensureAuth } from '../lib/cloudbase';
+import { EDIT_PERMISSION_DENIED_MESSAGE, isCurrentUserAdmin } from '../lib/permissions';
 
 export interface HistoryRecord {
   id: string;
@@ -87,7 +88,7 @@ export const useRankingStore = create<RankingState>((set, get) => ({
       const res = (await db.collection('Dayitong_ranking_users').get()) as DbListResponse<RankingUserDoc>;
       let users = res.data.map(mapRankingUserDoc);
 
-      if (users.length === 0) {
+      if (users.length === 0 && isCurrentUserAdmin()) {
         console.log('Initializing ranking_users with mock data...');
         const addPromises = INITIAL_USERS.map(user => db.collection('Dayitong_ranking_users').add(user));
         await Promise.all(addPromises);
@@ -110,6 +111,10 @@ export const useRankingStore = create<RankingState>((set, get) => ({
   },
 
   addUser: async (name, score) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const newUser = {
@@ -126,6 +131,10 @@ export const useRankingStore = create<RankingState>((set, get) => ({
   },
 
   updateUser: async (id, name, score) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       await db.collection('Dayitong_ranking_users').doc(id).update({ name, score });
@@ -136,6 +145,10 @@ export const useRankingStore = create<RankingState>((set, get) => ({
   },
 
   deleteUser: async (id) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       await db.collection('Dayitong_ranking_users').doc(id).remove();
@@ -146,6 +159,10 @@ export const useRankingStore = create<RankingState>((set, get) => ({
   },
 
   addHistoryRecord: async (userId, record) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const user = get().users.find(u => u.id === userId);
@@ -171,6 +188,10 @@ export const useRankingStore = create<RankingState>((set, get) => ({
   },
 
   updateHistoryRecord: async (userId, recordId, updates) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const user = get().users.find(u => u.id === userId);
@@ -201,6 +222,10 @@ export const useRankingStore = create<RankingState>((set, get) => ({
   },
 
   deleteHistoryRecord: async (userId, recordId) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const user = get().users.find(u => u.id === userId);
@@ -226,6 +251,10 @@ export const useRankingStore = create<RankingState>((set, get) => ({
   },
 
   restoreHistoryRecord: async (userId, recordId) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const user = get().users.find(u => u.id === userId);
@@ -255,6 +284,10 @@ export const useRankingStore = create<RankingState>((set, get) => ({
   },
 
   permanentDeleteHistoryRecord: async (userId, recordId) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
     try {
       await ensureAuth();
       const user = get().users.find(u => u.id === userId);
@@ -273,6 +306,9 @@ export const useRankingStore = create<RankingState>((set, get) => ({
   },
 
   cleanupTrash: async () => {
+    if (!isCurrentUserAdmin()) {
+      return;
+    }
     try {
       await ensureAuth();
       const users = get().users;

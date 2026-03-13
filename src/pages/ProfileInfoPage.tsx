@@ -3,11 +3,14 @@ import { useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ImagePreviewModal } from '../components/ImagePreviewModal';
 import { useProfileStore } from '../store/useProfileStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 export const ProfileInfoPage = () => {
   const navigate = useNavigate();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const { name, gender, hobby, signature, avatarUrl, updateAvatar } = useProfileStore();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
   const [isAvatarPreviewOpen, setIsAvatarPreviewOpen] = useState(false);
 
   const profileItems = [
@@ -18,10 +21,12 @@ export const ProfileInfoPage = () => {
   ] as const;
 
   const handleAvatarClick = () => {
+    if (!isAdmin) return;
     fileInputRef.current?.click();
   };
 
   const handleAvatarChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (!isAdmin) return;
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -55,7 +60,9 @@ export const ProfileInfoPage = () => {
         <button
           type="button"
           onClick={handleAvatarClick}
-          className="w-full px-4 py-4 flex items-center text-left border-b border-gray-100 hover:bg-gray-50 active:bg-gray-100 transition-colors"
+          className={`w-full px-4 py-4 flex items-center text-left border-b border-gray-100 transition-colors ${
+            isAdmin ? 'hover:bg-gray-50 active:bg-gray-100' : 'cursor-default'
+          }`}
         >
           <span className="text-[17px] text-gray-900">头像</span>
           <span className="ml-auto flex items-center gap-3">
@@ -91,11 +98,18 @@ export const ProfileInfoPage = () => {
           const rowClassName = `w-full px-4 py-4 flex items-center text-left ${!isLast ? 'border-b border-gray-100' : ''} hover:bg-gray-50 active:bg-gray-100 transition-colors`;
 
           return (
-            <button key={item.id} onClick={() => navigate(`/profile-info/edit/${item.id}`)} className={rowClassName}>
+            <button
+              key={item.id}
+              onClick={() => {
+                if (!isAdmin) return;
+                navigate(`/profile-info/edit/${item.id}`);
+              }}
+              className={`${rowClassName} ${isAdmin ? '' : 'cursor-default'}`}
+            >
               <span className="text-[17px] text-gray-900">{item.label}</span>
               <span className="ml-auto flex items-center gap-2 text-gray-500 max-w-[58%]">
                 <span className="text-[17px] truncate">{item.value}</span>
-                <ChevronRight size={18} className="text-gray-300 shrink-0" />
+                {isAdmin ? <ChevronRight size={18} className="text-gray-300 shrink-0" /> : null}
               </span>
             </button>
           );

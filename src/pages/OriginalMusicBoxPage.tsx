@@ -4,9 +4,12 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { SongItem } from './originalMusicBoxData';
 import { SONG_STORAGE_KEY, TRASH_RETENTION_MS, loadSongsFromStorage } from './originalMusicBoxData';
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 export const OriginalMusicBoxPage = () => {
   const navigate = useNavigate();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
 
   const [showMenu, setShowMenu] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -31,10 +34,12 @@ export const OriginalMusicBoxPage = () => {
   );
 
   const handleUpdateSong = (id: string, field: 'title' | 'duration' | 'intro', value: string) => {
+    if (!isAdmin) return;
     setSongs((prev) => prev.map((song) => (song.id === id ? { ...song, [field]: value } : song)));
   };
 
   const handleUpdateStyle = (id: string, index: number, value: string) => {
+    if (!isAdmin) return;
     setSongs((prev) =>
       prev.map((song) => {
         if (song.id !== id) {
@@ -49,19 +54,23 @@ export const OriginalMusicBoxPage = () => {
   };
 
   const handleDeleteSong = (id: string) => {
+    if (!isAdmin) return;
     const now = Date.now();
     setSongs((prev) => prev.map((song) => (song.id === id ? { ...song, deletedAt: now } : song)));
   };
 
   const handleRestoreSong = (id: string) => {
+    if (!isAdmin) return;
     setSongs((prev) => prev.map((song) => (song.id === id ? { ...song, deletedAt: undefined } : song)));
   };
 
   const handlePermanentDelete = (id: string) => {
+    if (!isAdmin) return;
     setSongs((prev) => prev.filter((song) => song.id !== id));
   };
 
   const handleAddSong = () => {
+    if (!isAdmin) return;
     const newSong: SongItem = {
       id: `song-${Date.now()}`,
       title: '新歌曲',
@@ -76,6 +85,7 @@ export const OriginalMusicBoxPage = () => {
   };
 
   const handleReorder = (newOrder: SongItem[]) => {
+    if (!isAdmin) return;
     if (showTrashBin) {
       return;
     }
@@ -121,14 +131,17 @@ export const OriginalMusicBoxPage = () => {
 
           <button
             type="button"
-            onClick={() => setShowMenu((value) => !value)}
-            className="h-10 w-10 rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            onClick={() => {
+              if (!isAdmin) return;
+              setShowMenu((value) => !value);
+            }}
+            className={`h-10 w-10 rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 ${isAdmin ? '' : 'invisible'}`}
             aria-label="菜单"
           >
             <Menu size={22} className="mx-auto" />
           </button>
 
-          {showMenu && (
+          {isAdmin && showMenu && (
             <>
               <button
                 type="button"
@@ -195,9 +208,9 @@ export const OriginalMusicBoxPage = () => {
             <Reorder.Item
               key={song.id}
               value={song}
-              dragListener={!showTrashBin}
+              dragListener={isAdmin && !showTrashBin}
               onDoubleClick={() => {
-                if (!showTrashBin) {
+                if (isAdmin && !showTrashBin) {
                   setEditingSongId((current) => (current === song.id ? null : song.id));
                 }
               }}
@@ -234,7 +247,7 @@ export const OriginalMusicBoxPage = () => {
                   </div>
 
                   <div className="min-w-0 flex-1 self-center">
-                    {editingSongId === song.id ? (
+                    {isAdmin && editingSongId === song.id ? (
                       <div className="space-y-2" onClick={(event) => event.stopPropagation()}>
                         <input
                           value={song.title}
@@ -316,7 +329,7 @@ export const OriginalMusicBoxPage = () => {
                           <Play size={18} className="mx-auto translate-x-[1px]" />
                         </button>
 
-                        {(isEditMode || editingSongId === song.id) && (
+                        {isAdmin && (isEditMode || editingSongId === song.id) && (
                           <button
                             type="button"
                             onClick={(event) => {
@@ -363,7 +376,7 @@ export const OriginalMusicBoxPage = () => {
           ))}
         </Reorder.Group>
 
-        {!showTrashBin && (
+        {isAdmin && !showTrashBin && (
           <button
             onClick={handleAddSong}
             className="mt-4 flex w-full items-center justify-center rounded-xl border-2 border-dashed border-slate-200 py-3 font-medium text-slate-400 transition-all hover:border-teal-400 hover:bg-teal-50/50 hover:text-teal-500"

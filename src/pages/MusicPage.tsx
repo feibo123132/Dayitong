@@ -1,4 +1,4 @@
-﻿import {
+import {
   Bell,
   CalendarDays,
   ChevronRight,
@@ -82,7 +82,7 @@ export const MusicPage = () => {
       label: '猜歌',
       value: `${guessUsers.length}人`,
       icon: Music2,
-      path: '/guess-music-locations',
+      path: '/guess-music',
       iconColor: 'text-sky-500',
       iconBg: 'bg-sky-50',
     },

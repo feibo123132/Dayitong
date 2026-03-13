@@ -2,6 +2,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { type EditableProfileField, useProfileStore } from '../store/useProfileStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 type FieldConfig = {
   field: EditableProfileField;
@@ -48,6 +50,7 @@ export const ProfileFieldEditPage = () => {
   const navigate = useNavigate();
   const { field } = useParams();
   const { name, gender, hobby, signature, updateField } = useProfileStore();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
 
   const config = useMemo(() => {
     if (!isEditableField(field)) return null;
@@ -74,6 +77,19 @@ export const ProfileFieldEditPage = () => {
         <button onClick={() => navigate('/profile-info')} className="text-jieyou-mint text-base font-medium">
           返回个人资料
         </button>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="-mx-4 -mt-4 min-h-screen bg-[#f1f2f5] flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <p className="text-gray-500">仅管理员可编辑个人资料</p>
+          <button onClick={() => navigate('/profile-info')} className="text-jieyou-mint text-base font-medium">
+            返回个人资料
+          </button>
+        </div>
       </div>
     );
   }

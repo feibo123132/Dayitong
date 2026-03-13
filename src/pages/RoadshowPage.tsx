@@ -9,7 +9,7 @@ const ROADSHOW_ITEMS = [
     icon: Music,
     iconColor: 'text-cyan-600',
     iconBg: 'bg-cyan-50',
-    path: '/guess-music-locations',
+    path: '/guess-music',
   },
   {
     id: '2',
@@ -42,10 +42,7 @@ export const RoadshowPage = () => {
           <Settings size={24} />
         </button>
 
-        <div className="pointer-events-none absolute inset-0 z-10 flex flex-col items-center justify-center px-6 pt-6 text-center">
-          <h1 className="text-4xl font-bold tracking-wide text-white drop-shadow-md">路演</h1>
-          <p className="mt-2 text-sm text-white/90">听歌识曲 · 互动打榜 · 校园舞台</p>
-        </div>
+        {/* Banner Text Removed */}
       </div>
 
       <div className="relative z-10 mx-auto -mt-8 max-w-md px-4 pb-10">

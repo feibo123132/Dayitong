@@ -1,12 +1,15 @@
-import { ArrowLeft, Clock, Flame, Heart, MessageCircleHeart, Music, Send, Edit2, Trash2, Menu, RefreshCcw } from 'lucide-react';
+import { ArrowLeft, Clock, Flame, Heart, MessageCircleHeart, Music, Send, Edit2, Trash2, Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { TRASH_RETENTION_MS, useSongRequestStore } from '../store/useSongRequestStore';
+import { useSongRequestStore } from '../store/useSongRequestStore';
 import type { SongRequest } from '../store/useSongRequestStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 export const SongRequestPage = () => {
   const navigate = useNavigate();
   const { requests, addRequest, likeRequest, updateRequest, deleteRequest, fetchRequests } = useSongRequestStore();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
   const [activeTab, setActiveTab] = useState<'latest' | 'hot'>('latest');
   const [showForm, setShowForm] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -34,11 +37,13 @@ export const SongRequestPage = () => {
   };
 
   const openCreateForm = () => {
+    if (!isAdmin) return;
     resetForm();
     setShowForm(true);
   };
 
   const openEditForm = (req: SongRequest) => {
+    if (!isAdmin) return;
     setEditingId(req.id);
     setSongName(req.songName);
     setArtist(req.artist || '');
@@ -48,6 +53,7 @@ export const SongRequestPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     if (!songName.trim()) return;
 
     if (editingId) {
@@ -64,6 +70,7 @@ export const SongRequestPage = () => {
   };
 
   const handleDelete = (id: string) => {
+    if (!isAdmin) return;
     if (window.confirm('确定要将这条点歌移入回收站吗？')) {
       deleteRequest(id);
     }
@@ -121,15 +128,18 @@ export const SongRequestPage = () => {
         <ArrowLeft size={24} />
       </button>
 
-      <div className="absolute top-4 right-4 z-50">
+      <div className={`${isAdmin ? '' : 'hidden '}absolute top-4 right-4 z-50`}>
         <button
-          onClick={() => setShowMenu(!showMenu)}
+          onClick={() => {
+            if (!isAdmin) return;
+            setShowMenu(!showMenu);
+          }}
           className="p-2 text-white/80 hover:text-white transition-colors bg-black/10 rounded-full backdrop-blur-sm"
         >
           <Menu size={24} />
         </button>
 
-        {showMenu && (
+        {isAdmin && showMenu && (
           <div className="absolute right-0 top-12 mt-2 w-40 bg-white rounded-xl shadow-lg z-50 border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2">
             <div
               className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
@@ -186,10 +196,10 @@ export const SongRequestPage = () => {
           <div
             key={req.id}
             onClick={() => {
-              if (!isEditing) openEditForm(req);
+              if (!isEditing && isAdmin) openEditForm(req);
             }}
             className={`rounded-2xl p-4 shadow-sm border relative overflow-hidden group transition-all bg-white border-pink-100 ${
-              isEditing ? 'cursor-default' : 'cursor-pointer hover:shadow-md'
+              isEditing || !isAdmin ? 'cursor-default' : 'cursor-pointer hover:shadow-md'
             }`}
           >
             <div className="flex justify-between items-start mb-2">
@@ -208,7 +218,7 @@ export const SongRequestPage = () => {
             )}
 
             <div className="flex justify-end items-center text-gray-400 text-xs gap-3">
-              {isEditing ? (
+              {isAdmin && isEditing ? (
                 <div className="flex space-x-3">
                   <button
                     onClick={(e) => {
@@ -229,17 +239,22 @@ export const SongRequestPage = () => {
                     <Trash2 size={16} />
                   </button>
                 </div>
-              ) : (
+              ) : isAdmin ? (
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    likeRequest(req.id);
+                    void likeRequest(req.id);
                   }}
                   className="flex items-center space-x-1 hover:text-pink-500 transition-colors group"
                 >
                   <Heart size={16} className={`group-active:scale-125 transition-transform ${req.likes > 0 ? 'fill-pink-500 text-pink-500' : ''}`} />
                   <span>{req.likes}</span>
                 </button>
+              ) : (
+                <div className="flex items-center space-x-1">
+                  <Heart size={16} className={req.likes > 0 ? 'fill-pink-500 text-pink-500' : ''} />
+                  <span>{req.likes}</span>
+                </div>
               )}
             </div>
           </div>
@@ -254,7 +269,7 @@ export const SongRequestPage = () => {
         <div className="h-36"></div>
       </div>
 
-      {!isEditing && (
+      {isAdmin && !isEditing && (
         <div className="fixed left-1/2 -translate-x-1/2 w-full max-w-md px-4 pt-4 pb-3 bg-gradient-to-t from-white via-white to-transparent z-40 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)]">
           <button
             onClick={openCreateForm}

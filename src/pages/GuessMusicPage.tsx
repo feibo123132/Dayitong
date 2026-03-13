@@ -1,31 +1,21 @@
-﻿import { ArrowDown, ArrowLeft, ArrowUp, Check, Edit2, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Check, Edit2, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useGuessMusicStore, type GuessLocationKey } from '../store/useGuessMusicStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 type SortKey = 'count' | 'rate' | 'rank' | 'participationCount' | null;
 type SortDirection = 'asc' | 'desc';
 
-const getLocationKey = (value: string | null): GuessLocationKey => {
-  if (value === 'nanhu') return 'nanhu';
-  if (value === 'gx-garden') return 'gx-garden';
-  return 'gx-egg';
-};
-
-const getLocationTitle = (location: GuessLocationKey): string => {
-  if (location === 'nanhu') return '南湖听歌识曲榜';
-  if (location === 'gx-garden') return '广西菜园听歌识曲榜';
-  return '校园路演听歌识曲榜';
-};
-
 export const GuessMusicPage = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const locationKey = getLocationKey(searchParams.get('location'));
-  const locationTitle = getLocationTitle(locationKey);
+  const locationKey: GuessLocationKey = 'gx-egg';
+  const locationTitle = '校园路演听歌识曲榜';
   const bannerImageUrl = `${import.meta.env.BASE_URL}images/roadshow/location-select-banner.png`;
 
   const { users, addUser, updateUser, deleteUser, setActiveLocation, isLoading } = useGuessMusicStore();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
   const [isEditing, setIsEditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
@@ -80,8 +70,11 @@ export const GuessMusicPage = () => {
   }, [users, searchTerm, sortConfig]);
 
   const handleAddUser = () => {
+    if (!isAdmin) return;
     void addUser('新选手', 0, 1);
   };
+
+  const editable = isAdmin && isEditing;
 
   return (
     <div className="min-h-screen bg-teal-50/50">
@@ -99,12 +92,14 @@ export const GuessMusicPage = () => {
           <ArrowLeft size={24} />
         </button>
 
-        <button
-          onClick={() => setIsEditing((v) => !v)}
-          className="absolute top-4 right-4 rounded-full bg-black/10 p-2 text-white/80 backdrop-blur-sm transition-colors hover:text-white"
-        >
-          {isEditing ? <Check size={24} /> : <Edit2 size={24} />}
-        </button>
+        {isAdmin ? (
+          <button
+            onClick={() => setIsEditing((v) => !v)}
+            className="absolute top-4 right-4 rounded-full bg-black/10 p-2 text-white/80 backdrop-blur-sm transition-colors hover:text-white"
+          >
+            {isEditing ? <Check size={24} /> : <Edit2 size={24} />}
+          </button>
+        ) : null}
       </div>
 
       <div className="relative z-10 mx-auto -mt-10 max-w-md px-4 pb-10">
@@ -188,7 +183,7 @@ export const GuessMusicPage = () => {
                 </div>
               </div>
             </div>
-            {isEditing ? <div className="w-8"></div> : null}
+            {editable ? <div className="w-8"></div> : null}
           </div>
 
           <div className="mt-2 space-y-2 px-1">
@@ -202,7 +197,7 @@ export const GuessMusicPage = () => {
                   </div>
 
                   <div className="min-w-0 flex-1 px-1">
-                    {isEditing ? (
+                    {editable ? (
                       <input
                         type="text"
                         value={item.name}
@@ -215,7 +210,7 @@ export const GuessMusicPage = () => {
                   </div>
 
                   <div className="w-16 flex-shrink-0 text-center">
-                    {isEditing ? (
+                    {editable ? (
                       <input
                         type="number"
                         value={item.count}
@@ -230,7 +225,7 @@ export const GuessMusicPage = () => {
                   <div className="w-16 flex-shrink-0 truncate text-center text-xs text-gray-500">{item.rate}</div>
 
                   <div className="w-16 flex-shrink-0 text-center">
-                    {isEditing ? (
+                    {editable ? (
                       <input
                         type="number"
                         value={item.participationCount}
@@ -247,7 +242,7 @@ export const GuessMusicPage = () => {
                     )}
                   </div>
 
-                  {isEditing ? (
+                  {editable ? (
                     <button onClick={() => void deleteUser(item.id)} className="flex w-8 flex-shrink-0 justify-center text-red-400 transition-colors hover:text-red-600">
                       <Trash2 size={16} />
                     </button>
@@ -259,7 +254,7 @@ export const GuessMusicPage = () => {
             )}
           </div>
 
-          {isEditing ? (
+          {editable ? (
             <button
               onClick={handleAddUser}
               className="mt-4 flex w-full items-center justify-center space-x-2 rounded-xl border-2 border-dashed border-teal-300 py-3 text-teal-400 transition-colors hover:bg-teal-50"

@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿import {
+﻿﻿﻿﻿﻿import {
   ChevronRight,
   MessageSquareHeart,
   Music,
@@ -49,7 +49,7 @@ const MENU_GROUPS: MenuItem[][] = [
       icon: Smile,
       iconBg: 'bg-teal-50',
       iconColor: 'text-teal-500',
-      path: '/guess-music-locations',
+      path: '/guess-music',
     },
   ],
   [

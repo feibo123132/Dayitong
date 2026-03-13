@@ -4,11 +4,14 @@ import { useRankingStore } from '../store/useRankingStore';
 import { ArrowLeft, Edit2, Plus, Trash2, Check, X, Menu, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { HistoryRecord } from '../store/useRankingStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { isAdminEmail } from '../lib/permissions';
 
 export const RankingUserDetailPage = () => {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
   const { users, addHistoryRecord, updateHistoryRecord, deleteHistoryRecord, restoreHistoryRecord, permanentDeleteHistoryRecord, cleanupTrash } = useRankingStore();
+  const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
   
   const user = users.find(u => u.id === userId);
   const [isEditing, setIsEditing] = useState(false);
@@ -20,8 +23,9 @@ export const RankingUserDetailPage = () => {
 
   // Auto cleanup on mount
   useEffect(() => {
-    cleanupTrash();
-  }, [cleanupTrash]);
+    if (!isAdmin) return;
+    void cleanupTrash();
+  }, [cleanupTrash, isAdmin]);
 
   // Form State
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -36,12 +40,13 @@ export const RankingUserDetailPage = () => {
   };
 
   const openAddForm = () => {
+    if (!isAdmin) return;
     resetForm();
     setShowAddForm(true);
   };
 
   const closeAddForm = () => {
-    closeAddForm();
+    setShowAddForm(false);
     resetForm();
   };
 
@@ -67,6 +72,7 @@ export const RankingUserDetailPage = () => {
   }
 
   const handleEditClick = (record: HistoryRecord) => {
+    if (!isAdmin) return;
     // Only allow editing if NOT in trash mode
     if (showTrash) return;
     
@@ -79,6 +85,7 @@ export const RankingUserDetailPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isAdmin) return;
     if (!reason || !scoreChange) return;
 
     if (editingRecordId) {
@@ -101,16 +108,19 @@ export const RankingUserDetailPage = () => {
   };
 
   const handleDelete = (recordId: string) => {
+    if (!isAdmin) return;
     if (window.confirm('确定要将这条记录移入回收站吗？积分将自动扣除。')) {
       deleteHistoryRecord(user.id, recordId);
     }
   };
 
   const handleRestore = (recordId: string) => {
+    if (!isAdmin) return;
     restoreHistoryRecord(user.id, recordId);
   };
 
   const handlePermanentDelete = (recordId: string) => {
+    if (!isAdmin) return;
     if (window.confirm('确定要彻底删除这条记录吗？此操作无法撤销。')) {
       permanentDeleteHistoryRecord(user.id, recordId);
     }
@@ -142,14 +152,17 @@ export const RankingUserDetailPage = () => {
         {/* Menu Button (Replacing Edit Button) */}
         <div className="relative">
           <button 
-            onClick={() => setShowMenu(!showMenu)}
+            onClick={() => {
+              if (!isAdmin) return;
+              setShowMenu(!showMenu);
+            }}
             className="p-2 -mr-2 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <Menu size={24} />
           </button>
 
           {/* Dropdown Menu */}
-          {showMenu && (
+          {isAdmin && showMenu && (
             <>
               <div 
                 className="fixed inset-0 z-10" 
@@ -198,7 +211,7 @@ export const RankingUserDetailPage = () => {
           <h2 className="font-bold text-gray-700">
             {showTrash ? '已删除记录 (7天后自动清除)' : '积分记录'}
           </h2>
-          {isEditing && !showTrash && (
+          {isAdmin && isEditing && !showTrash && (
             <button 
               onClick={openAddForm}
               className="flex items-center text-sm font-bold text-jieyou-mint bg-teal-50 px-3 py-1.5 rounded-full"
@@ -220,7 +233,7 @@ export const RankingUserDetailPage = () => {
                   exit={{ opacity: 0, height: 0 }}
                   onClick={() => handleEditClick(record)}
                   className={`bg-white rounded-xl p-4 shadow-sm border border-gray-100 relative overflow-hidden transition-all ${
-                    !showTrash ? 'cursor-pointer hover:shadow-md hover:border-jieyou-mint/30 active:scale-[0.99]' : ''
+                    isAdmin && !showTrash ? 'cursor-pointer hover:shadow-md hover:border-jieyou-mint/30 active:scale-[0.99]' : ''
                   }`}
                 >
                   <div className="flex justify-between items-start">
@@ -246,7 +259,7 @@ export const RankingUserDetailPage = () => {
                   <div className="mt-2 pt-2 border-t border-gray-50 flex justify-between items-center">
                     <span className="text-xs text-gray-400">变动后总分: {record.totalScore}</span>
                     
-                    {showTrash ? (
+                    {showTrash && isAdmin ? (
                       <div className="flex space-x-2">
                         <button 
                           onClick={() => handleRestore(record.id)}
@@ -262,7 +275,7 @@ export const RankingUserDetailPage = () => {
                         </button>
                       </div>
                     ) : (
-                      isEditing && (
+                      isAdmin && isEditing && (
                         <button 
                           onClick={() => handleDelete(record.id)}
                           className="p-1.5 bg-red-50 text-red-500 rounded-lg hover:bg-red-100 transition-colors"
@@ -284,7 +297,7 @@ export const RankingUserDetailPage = () => {
       </div>
 
       {/* Add Record Modal */}
-      {showAddForm && (
+      {isAdmin && showAddForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white w-full max-w-sm rounded-2xl p-6 shadow-2xl animate-in zoom-in-95">
             <div className="flex justify-between items-center mb-6">
