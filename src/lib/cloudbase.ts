@@ -1,10 +1,11 @@
 import cloudbase from '@cloudbase/js-sdk';
 
-// Initialize CloudBase
-// Region is optional if it's the default region, but good to have if known.
-// Assuming default for now or auto-detected.
+const fallbackEnvId = 'jieyou-3gr01mvob9ad92de';
+const configuredEnvId = import.meta.env.VITE_TCB_ENV_ID;
+const envId = typeof configuredEnvId === 'string' && configuredEnvId.trim() ? configuredEnvId.trim() : fallbackEnvId;
+
 export const app = cloudbase.init({
-  env: 'jieyou-3gr01mvob9ad92de',
+  env: envId,
 });
 
 export const auth = app.auth();
@@ -22,10 +23,6 @@ export const ensureAuth = async (): Promise<void> => {
   authInFlight = (async () => {
     const loginState = await auth.getLoginState();
     if (!loginState) {
-      // For email login flow, we might not want auto-anonymous login 
-      // if we want to force user to login page.
-      // But for some features like viewing ranking, anonymous is fine.
-      // Let's keep it but be aware.
       await auth.signInAnonymously();
     }
   })();
