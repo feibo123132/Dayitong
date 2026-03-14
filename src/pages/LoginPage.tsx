@@ -1,4 +1,4 @@
-﻿﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { Loader2, Mail } from 'lucide-react';
@@ -142,7 +142,11 @@ export const LoginPage = () => {
   const [msg, setMsg] = useState('');
   const [codeSent, setCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
-  const [quoteIndex, setQuoteIndex] = useState(0);
+  const quoteIndex = (() => {
+    const now = new Date();
+    const daySerial = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / (24 * 60 * 60 * 1000));
+    return ((daySerial % DAILY_QUOTES.length) + DAILY_QUOTES.length) % DAILY_QUOTES.length;
+  })();
   const [logoLoadError, setLogoLoadError] = useState(false);
 
   useEffect(() => {
@@ -151,13 +155,6 @@ export const LoginPage = () => {
       return () => clearTimeout(timer);
     }
   }, [countdown]);
-
-  useEffect(() => {
-    const now = new Date();
-    const daySerial = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / (24 * 60 * 60 * 1000));
-    const index = ((daySerial % DAILY_QUOTES.length) + DAILY_QUOTES.length) % DAILY_QUOTES.length;
-    setQuoteIndex(index);
-  }, []);
 
   const handleSendCode = async () => {
     resetError();
