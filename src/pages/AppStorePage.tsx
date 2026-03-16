@@ -1,12 +1,17 @@
-import { ArrowLeft, ExternalLink, Globe, Heart } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+
+const createEmojiIcon = (emoji: string) =>
+  function EmojiIcon({ size = 32 }: { size?: number }) {
+    return <span style={{ fontSize: size, lineHeight: 1 }}>{emoji}</span>;
+  };
 
 const APPS = [
   { 
     id: '1', 
     name: 'JIEYOU 不解忧', 
     desc: '你的专属情绪观察员', 
-    icon: Heart, 
+    icon: createEmojiIcon('🫶'), 
     color: 'text-pink-500',
     bgColor: 'bg-pink-50',
     url: 'https://loveyourself.jieyouyuzhou.cn/' 
@@ -15,19 +20,28 @@ const APPS = [
     id: '2', 
     name: '世界上的另一个你', 
     desc: '进入 JIEYOU 宇宙网页应用', 
-    icon: Globe, 
+    icon: createEmojiIcon('🌍'), 
     color: 'text-cyan-500',
     bgColor: 'bg-cyan-50',
     url: 'https://jieyouyuzhou.cn/' 
   },
   { 
     id: '3', 
-    name: '更多应用', 
-    desc: '敬请期待...', 
-    icon: ExternalLink, 
-    color: 'text-gray-400',
-    bgColor: 'bg-gray-100',
-    url: null 
+    name: '任务看板', 
+    desc: '高效管理任务与进度', 
+    icon: createEmojiIcon('📋'), 
+    color: 'text-indigo-500',
+    bgColor: 'bg-indigo-50',
+    url: 'https://kanban.jieyouyuzhou.cn/' 
+  },
+  { 
+    id: '4', 
+    name: '存钱罐', 
+    desc: '记录目标，养成储蓄习惯', 
+    icon: createEmojiIcon('🐷'), 
+    color: 'text-emerald-500',
+    bgColor: 'bg-emerald-50',
+    url: 'https://cunqianguan.jieyouyuzhou.cn/' 
   },
 ];
 

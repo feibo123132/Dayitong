@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Loader2, Lock, Mail } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
@@ -162,8 +162,18 @@ export const LoginPage = () => {
   const [setupCodeSent, setSetupCodeSent] = useState(false);
   const [countdown, setCountdown] = useState(0);
   const [setupCountdown, setSetupCountdown] = useState(0);
-  const [quoteIndex, setQuoteIndex] = useState(0);
+  const quoteIndex = useMemo(() => {
+    const now = new Date();
+    const daySerial = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / (24 * 60 * 60 * 1000));
+    return ((daySerial % DAILY_QUOTES.length) + DAILY_QUOTES.length) % DAILY_QUOTES.length;
+  }, []);
   const [logoLoadError, setLogoLoadError] = useState(false);
+
+  const switchMode = (nextMode: LoginMode) => {
+    setMsg('');
+    resetError();
+    setMode(nextMode);
+  };
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -176,18 +186,6 @@ export const LoginPage = () => {
     const timer = setTimeout(() => setSetupCountdown((prev) => prev - 1), 1000);
     return () => clearTimeout(timer);
   }, [setupCountdown]);
-
-  useEffect(() => {
-    const now = new Date();
-    const daySerial = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / (24 * 60 * 60 * 1000));
-    const index = ((daySerial % DAILY_QUOTES.length) + DAILY_QUOTES.length) % DAILY_QUOTES.length;
-    setQuoteIndex(index);
-  }, []);
-
-  useEffect(() => {
-    setMsg('');
-    resetError();
-  }, [mode, resetError]);
 
   const validateEmail = () => {
     const normalizedEmail = email.trim().toLowerCase();
@@ -351,7 +349,7 @@ export const LoginPage = () => {
         <div className="mb-6 grid grid-cols-3 gap-2 rounded-xl bg-slate-100 p-1">
           <button
             type="button"
-            onClick={() => setMode('code')}
+            onClick={() => switchMode('code')}
             className={`rounded-lg py-2 text-sm font-medium transition-colors ${
               mode === 'code' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
@@ -360,7 +358,7 @@ export const LoginPage = () => {
           </button>
           <button
             type="button"
-            onClick={() => setMode('password')}
+            onClick={() => switchMode('password')}
             className={`rounded-lg py-2 text-sm font-medium transition-colors ${
               mode === 'password' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
@@ -369,7 +367,7 @@ export const LoginPage = () => {
           </button>
           <button
             type="button"
-            onClick={() => setMode('setup')}
+            onClick={() => switchMode('setup')}
             className={`rounded-lg py-2 text-sm font-medium transition-colors ${
               mode === 'setup' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
             }`}
@@ -494,7 +492,7 @@ export const LoginPage = () => {
               </button>
               <button
                 type="button"
-                onClick={() => setMode('setup')}
+                onClick={() => switchMode('setup')}
                 className="w-full py-2 text-slate-500 text-sm hover:text-slate-700 transition-colors"
               >
                 忘记密码？去设置/重置
@@ -604,7 +602,7 @@ export const LoginPage = () => {
               )}
               <button
                 type="button"
-                onClick={() => setMode('password')}
+                onClick={() => switchMode('password')}
                 className="w-full py-2 text-slate-500 text-sm hover:text-slate-700 transition-colors"
               >
                 返回密码登录
