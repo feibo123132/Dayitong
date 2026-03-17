@@ -12,7 +12,7 @@ import {
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import type { SongLyricLine } from './originalMusicBoxData';
-import { getSongDetail, loadSongsFromStorage } from './originalMusicBoxData';
+import { getSongDetail, loadSongsForOwner, loadSongsFromStorage } from './originalMusicBoxData';
 import { useAuthStore } from '../store/useAuthStore';
 import { isAdminEmail } from '../lib/permissions';
 
@@ -160,14 +160,32 @@ type LyricsCarouselScreenProps = {
 
 const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
+  const ownerUid = user?.uid ?? '';
+  const ownerEmail = user?.email ?? '';
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const lyricRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const song = useMemo(() => {
+  const [song, setSong] = useState(() => {
     return loadSongsFromStorage().find((item) => item.id === songId && !item.deletedAt) ?? null;
-  }, [songId]);
+  });
+
+  useEffect(() => {
+    let isActive = true;
+
+    void loadSongsForOwner({ uid: ownerUid, email: ownerEmail }).then((songs) => {
+      if (!isActive) {
+        return;
+      }
+      setSong(songs.find((item) => item.id === songId && !item.deletedAt) ?? null);
+    });
+
+    return () => {
+      isActive = false;
+    };
+  }, [ownerEmail, ownerUid, songId]);
 
   const detail = useMemo(() => (song ? getSongDetail(song) : null), [song]);
   const fallbackDuration = song ? parseDuration(song.duration) : 0;

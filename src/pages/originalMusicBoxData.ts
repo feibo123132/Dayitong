@@ -1,3 +1,5 @@
+import { db, ensureAuth } from '../lib/cloudbase';
+
 export type SongItem = {
   id: string;
   title: string;
@@ -26,6 +28,28 @@ export type SongDetail = {
 
 export const SONG_STORAGE_KEY = 'jieyou_original_music_box_songs_v1';
 export const TRASH_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
+export const ORIGINAL_MUSIC_BOX_COLLECTION = 'Dayitong_original_music_box';
+
+export type MusicBoxOwner = {
+  uid?: string | null;
+  email?: string | null;
+} | null;
+
+interface DbListResponse<T> {
+  data: T[];
+}
+
+type SongDocItem = Partial<SongItem> | null;
+
+type OriginalMusicBoxDoc = {
+  _id: string;
+  ownerKey: string;
+  ownerUid?: string;
+  ownerEmail?: string;
+  songs?: SongDocItem[];
+  createdAt: number;
+  updatedAt: number;
+};
 
 export const DEFAULT_SONGS: SongItem[] = [
   {
@@ -189,6 +213,71 @@ const SONG_DETAILS: Record<string, SongDetail> = {
   },
 };
 
+const normalizeSongs = (source: unknown): SongItem[] => {
+  if (!Array.isArray(source)) {
+    return DEFAULT_SONGS;
+  }
+
+  const normalized = source
+    .map((item, index) => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+
+      const songSource = item as Partial<SongItem>;
+      const fallback = DEFAULT_SONGS[index] ?? DEFAULT_SONGS[0];
+      const title = typeof songSource.title === 'string' && songSource.title.trim() ? songSource.title : fallback.title;
+      const duration =
+        typeof songSource.duration === 'string' && songSource.duration.trim() ? songSource.duration : fallback.duration;
+      const intro = typeof songSource.intro === 'string' ? songSource.intro : fallback.intro;
+      const coverClassName =
+        typeof songSource.coverClassName === 'string' && songSource.coverClassName.trim()
+          ? songSource.coverClassName
+          : fallback.coverClassName;
+
+      const styles = Array.isArray(songSource.styles)
+        ? songSource.styles.filter((style): style is string => typeof style === 'string')
+        : fallback.styles;
+
+      return {
+        id: typeof songSource.id === 'string' && songSource.id ? songSource.id : `song-${Date.now()}-${index}`,
+        title,
+        duration,
+        intro,
+        styles,
+        coverClassName,
+        deletedAt: typeof songSource.deletedAt === 'number' ? songSource.deletedAt : undefined,
+        audioUrl: typeof songSource.audioUrl === 'string' ? songSource.audioUrl : fallback.audioUrl,
+      } as SongItem;
+    })
+    .filter((song): song is SongItem => song !== null);
+
+  return normalized.length > 0 ? normalized : DEFAULT_SONGS;
+};
+
+const persistSongsToLocalStorage = (songs: SongItem[]): void => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  window.localStorage.setItem(SONG_STORAGE_KEY, JSON.stringify(songs));
+};
+
+const normalizeEmail = (email?: string | null): string => (email ?? '').trim().toLowerCase();
+
+const getOwnerKey = (owner: MusicBoxOwner): string | null => {
+  if (!owner) {
+    return null;
+  }
+  const email = normalizeEmail(owner.email);
+  if (email) {
+    return `email:${email}`;
+  }
+  if (owner.uid && owner.uid.trim()) {
+    return `uid:${owner.uid.trim()}`;
+  }
+  return null;
+};
+
 export const loadSongsFromStorage = (): SongItem[] => {
   if (typeof window === 'undefined') {
     return DEFAULT_SONGS;
@@ -199,48 +288,74 @@ export const loadSongsFromStorage = (): SongItem[] => {
     if (!raw) {
       return DEFAULT_SONGS;
     }
-
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
-      return DEFAULT_SONGS;
-    }
-
-    const normalized = parsed
-      .map((item, index) => {
-        if (!item || typeof item !== 'object') {
-          return null;
-        }
-
-        const source = item as Partial<SongItem>;
-        const fallback = DEFAULT_SONGS[index] ?? DEFAULT_SONGS[0];
-        const title = typeof source.title === 'string' && source.title.trim() ? source.title : fallback.title;
-        const duration = typeof source.duration === 'string' && source.duration.trim() ? source.duration : fallback.duration;
-        const intro = typeof source.intro === 'string' ? source.intro : fallback.intro;
-        const coverClassName =
-          typeof source.coverClassName === 'string' && source.coverClassName.trim()
-            ? source.coverClassName
-            : fallback.coverClassName;
-
-        const styles = Array.isArray(source.styles)
-          ? source.styles.filter((style): style is string => typeof style === 'string')
-          : fallback.styles;
-
-        return {
-          id: typeof source.id === 'string' && source.id ? source.id : `song-${Date.now()}-${index}`,
-          title,
-          duration,
-          intro,
-          styles,
-          coverClassName,
-          deletedAt: typeof source.deletedAt === 'number' ? source.deletedAt : undefined,
-          audioUrl: typeof source.audioUrl === 'string' ? source.audioUrl : fallback.audioUrl,
-        } as SongItem;
-      })
-      .filter((song): song is SongItem => song !== null);
-
-    return normalized.length > 0 ? normalized : DEFAULT_SONGS;
+    return normalizeSongs(JSON.parse(raw));
   } catch {
     return DEFAULT_SONGS;
+  }
+};
+
+export const loadSongsForOwner = async (owner: MusicBoxOwner): Promise<SongItem[]> => {
+  const ownerKey = getOwnerKey(owner);
+  if (!ownerKey) {
+    return loadSongsFromStorage();
+  }
+
+  const localSongs = loadSongsFromStorage();
+  const fallbackSongs = localSongs.length > 0 ? localSongs : DEFAULT_SONGS;
+
+  try {
+    await ensureAuth();
+    const collection = db.collection(ORIGINAL_MUSIC_BOX_COLLECTION);
+    const result = (await collection.where({ ownerKey }).limit(1).get()) as DbListResponse<OriginalMusicBoxDoc>;
+    const doc = result.data[0];
+
+    if (doc?.songs) {
+      const cloudSongs = normalizeSongs(doc.songs);
+      persistSongsToLocalStorage(cloudSongs);
+      return cloudSongs;
+    }
+
+    persistSongsToLocalStorage(fallbackSongs);
+    return fallbackSongs;
+  } catch {
+    return fallbackSongs;
+  }
+};
+
+export const saveSongsForOwner = async (owner: MusicBoxOwner, songs: SongItem[]): Promise<void> => {
+  const ownerKey = getOwnerKey(owner);
+  persistSongsToLocalStorage(songs);
+
+  if (!ownerKey) {
+    return;
+  }
+
+  try {
+    await ensureAuth();
+    const collection = db.collection(ORIGINAL_MUSIC_BOX_COLLECTION);
+    const result = (await collection.where({ ownerKey }).limit(1).get()) as DbListResponse<OriginalMusicBoxDoc>;
+    const now = Date.now();
+
+    if (result.data.length > 0) {
+      await collection.doc(result.data[0]._id).update({
+        songs,
+        ownerUid: owner?.uid ?? '',
+        ownerEmail: normalizeEmail(owner?.email),
+        updatedAt: now,
+      });
+      return;
+    }
+
+    await collection.add({
+      ownerKey,
+      ownerUid: owner?.uid ?? '',
+      ownerEmail: normalizeEmail(owner?.email),
+      songs,
+      createdAt: now,
+      updatedAt: now,
+    });
+  } catch {
+    // Keep local copy when cloud save fails.
   }
 };
 

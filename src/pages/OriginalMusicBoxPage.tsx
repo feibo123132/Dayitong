@@ -3,13 +3,23 @@ import { Reorder } from 'framer-motion';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { SongItem } from './originalMusicBoxData';
-import { SONG_STORAGE_KEY, TRASH_RETENTION_MS, loadSongsFromStorage } from './originalMusicBoxData';
+import {
+  SONG_STORAGE_KEY,
+  TRASH_RETENTION_MS,
+  loadSongsForOwner,
+  loadSongsFromStorage,
+  saveSongsForOwner,
+} from './originalMusicBoxData';
 import { useAuthStore } from '../store/useAuthStore';
 import { isAdminEmail } from '../lib/permissions';
 
 export const OriginalMusicBoxPage = () => {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
+  const ownerUid = user?.uid ?? '';
+  const ownerEmail = user?.email ?? '';
+  const ownerKey = `${ownerUid}|${ownerEmail}`;
 
   const [showMenu, setShowMenu] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -20,6 +30,30 @@ export const OriginalMusicBoxPage = () => {
     return loadSongsFromStorage().filter((song) => !song.deletedAt || now - song.deletedAt < TRASH_RETENTION_MS);
   });
   const [renderNow] = useState(() => Date.now());
+  const [loadedOwnerKey, setLoadedOwnerKey] = useState('');
+
+  useEffect(() => {
+    let isActive = true;
+
+    void loadSongsForOwner({ uid: ownerUid, email: ownerEmail })
+      .then((nextSongs) => {
+        if (!isActive) {
+          return;
+        }
+        const now = Date.now();
+        setSongs(nextSongs.filter((song) => !song.deletedAt || now - song.deletedAt < TRASH_RETENTION_MS));
+        setLoadedOwnerKey(ownerKey);
+      })
+      .catch(() => {
+        if (isActive) {
+          setLoadedOwnerKey(ownerKey);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [ownerEmail, ownerKey, ownerUid]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -27,6 +61,20 @@ export const OriginalMusicBoxPage = () => {
     }
     window.localStorage.setItem(SONG_STORAGE_KEY, JSON.stringify(songs));
   }, [songs]);
+
+  useEffect(() => {
+    if (!isAdmin || loadedOwnerKey !== ownerKey) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      void saveSongsForOwner({ uid: ownerUid, email: ownerEmail }, songs);
+    }, 250);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [isAdmin, loadedOwnerKey, ownerEmail, ownerKey, ownerUid, songs]);
 
   const displaySongs = useMemo(
     () => (showTrashBin ? songs.filter((song) => song.deletedAt) : songs.filter((song) => !song.deletedAt)),
