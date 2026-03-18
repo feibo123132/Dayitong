@@ -138,7 +138,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     auth.onLoginStateChanged((loginState: unknown) => {
       if (isLoginStateWithUser(loginState)) {
-        set({ user: loginState.user, isLoading: false });
+        const normalizedUser = toStoreUser(loginState.user);
+        set({ user: normalizedUser ?? loginState.user, isLoading: false });
         return;
       }
       set({ user: null, isLoading: false });
@@ -146,7 +147,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     const loginState = await auth.getLoginState();
     if (isLoginStateWithUser(loginState)) {
-      set({ user: loginState.user, isLoading: false });
+      const normalizedUser = toStoreUser(loginState.user);
+      set({ user: normalizedUser ?? loginState.user, isLoading: false });
       return;
     }
 

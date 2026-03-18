@@ -264,18 +264,20 @@ const persistSongsToLocalStorage = (songs: SongItem[]): void => {
 
 const normalizeEmail = (email?: string | null): string => (email ?? '').trim().toLowerCase();
 
-const getOwnerKey = (owner: MusicBoxOwner): string | null => {
-  if (!owner) {
-    return null;
-  }
+const getOwnerKeys = (owner: MusicBoxOwner): string[] => {
+  if (!owner) return [];
+  const keys: string[] = [];
+
   const email = normalizeEmail(owner.email);
   if (email) {
-    return `email:${email}`;
+    keys.push(`email:${email}`);
   }
+
   if (owner.uid && owner.uid.trim()) {
-    return `uid:${owner.uid.trim()}`;
+    keys.push(`uid:${owner.uid.trim()}`);
   }
-  return null;
+
+  return [...new Set(keys)];
 };
 
 export const loadSongsFromStorage = (): SongItem[] => {
@@ -295,45 +297,87 @@ export const loadSongsFromStorage = (): SongItem[] => {
 };
 
 export const loadSongsForOwner = async (owner: MusicBoxOwner): Promise<SongItem[]> => {
-  const ownerKey = getOwnerKey(owner);
-  if (!ownerKey) {
+  const ownerKeys = getOwnerKeys(owner);
+  if (ownerKeys.length === 0) {
     return loadSongsFromStorage();
   }
 
+  const primaryOwnerKey = ownerKeys[0];
+  const secondaryOwnerKey = ownerKeys[1];
   const localSongs = loadSongsFromStorage();
   const fallbackSongs = localSongs.length > 0 ? localSongs : DEFAULT_SONGS;
 
   try {
     await ensureAuth();
     const collection = db.collection(ORIGINAL_MUSIC_BOX_COLLECTION);
-    const result = (await collection.where({ ownerKey }).limit(1).get()) as DbListResponse<OriginalMusicBoxDoc>;
-    const doc = result.data[0];
+    const primaryResult = (await collection.where({ ownerKey: primaryOwnerKey }).limit(1).get()) as DbListResponse<OriginalMusicBoxDoc>;
+    const primaryDoc = primaryResult.data[0];
+    let secondaryDoc: OriginalMusicBoxDoc | undefined;
 
-    if (doc?.songs) {
-      const cloudSongs = normalizeSongs(doc.songs);
+    if (secondaryOwnerKey) {
+      const secondaryResult = (await collection.where({ ownerKey: secondaryOwnerKey }).limit(1).get()) as DbListResponse<OriginalMusicBoxDoc>;
+      secondaryDoc = secondaryResult.data[0];
+    }
+
+    const cloudDocs = [primaryDoc, secondaryDoc]
+      .filter((doc): doc is OriginalMusicBoxDoc => Boolean(doc && Array.isArray(doc.songs)))
+      .sort((a, b) => (b.updatedAt ?? 0) - (a.updatedAt ?? 0));
+
+    if (cloudDocs.length > 0) {
+      const latestDoc = cloudDocs[0];
+      const cloudSongs = normalizeSongs(latestDoc.songs);
       persistSongsToLocalStorage(cloudSongs);
+
+      // Best-effort migration to a single stable owner key.
+      if (latestDoc.ownerKey !== primaryOwnerKey) {
+        try {
+          if (primaryDoc?._id) {
+            await collection.doc(primaryDoc._id).update({
+              songs: cloudSongs,
+              ownerUid: owner?.uid ?? '',
+              ownerEmail: normalizeEmail(owner?.email),
+              updatedAt: Date.now(),
+            });
+          } else {
+            await collection.add({
+              ownerKey: primaryOwnerKey,
+              ownerUid: owner?.uid ?? '',
+              ownerEmail: normalizeEmail(owner?.email),
+              songs: cloudSongs,
+              createdAt: Date.now(),
+              updatedAt: Date.now(),
+            });
+          }
+        } catch {
+          // Ignore migration failures; read already succeeded.
+        }
+      }
+
       return cloudSongs;
     }
 
     persistSongsToLocalStorage(fallbackSongs);
     return fallbackSongs;
-  } catch {
+  } catch (error) {
+    console.error('Load original music box from cloud failed:', error);
     return fallbackSongs;
   }
 };
 
 export const saveSongsForOwner = async (owner: MusicBoxOwner, songs: SongItem[]): Promise<void> => {
-  const ownerKey = getOwnerKey(owner);
+  const ownerKeys = getOwnerKeys(owner);
   persistSongsToLocalStorage(songs);
 
-  if (!ownerKey) {
+  if (ownerKeys.length === 0) {
     return;
   }
+
+  const primaryOwnerKey = ownerKeys[0];
 
   try {
     await ensureAuth();
     const collection = db.collection(ORIGINAL_MUSIC_BOX_COLLECTION);
-    const result = (await collection.where({ ownerKey }).limit(1).get()) as DbListResponse<OriginalMusicBoxDoc>;
+    const result = (await collection.where({ ownerKey: primaryOwnerKey }).limit(1).get()) as DbListResponse<OriginalMusicBoxDoc>;
     const now = Date.now();
 
     if (result.data.length > 0) {
@@ -347,14 +391,15 @@ export const saveSongsForOwner = async (owner: MusicBoxOwner, songs: SongItem[])
     }
 
     await collection.add({
-      ownerKey,
+      ownerKey: primaryOwnerKey,
       ownerUid: owner?.uid ?? '',
       ownerEmail: normalizeEmail(owner?.email),
       songs,
       createdAt: now,
       updatedAt: now,
     });
-  } catch {
+  } catch (error) {
+    console.error('Save original music box to cloud failed:', error);
     // Keep local copy when cloud save fails.
   }
 };
