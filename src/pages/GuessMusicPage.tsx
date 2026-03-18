@@ -1,5 +1,5 @@
 import { ArrowDown, ArrowLeft, ArrowUp, Check, Edit2, Plus, Search, Trash2 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGuessMusicStore, type GuessLocationKey } from '../store/useGuessMusicStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -7,6 +7,17 @@ import { isAdminEmail } from '../lib/permissions';
 
 type SortKey = 'count' | 'rate' | 'rank' | 'participationCount' | null;
 type SortDirection = 'asc' | 'desc';
+type GuessUserDraft = {
+  name: string;
+  count: string;
+  participationCount: string;
+};
+
+const toDraft = (user: { name: string; count: number; participationCount: number }): GuessUserDraft => ({
+  name: user.name,
+  count: String(user.count),
+  participationCount: String(user.participationCount),
+});
 
 export const GuessMusicPage = () => {
   const navigate = useNavigate();
@@ -14,19 +25,73 @@ export const GuessMusicPage = () => {
   const locationTitle = '校园路演听歌识曲榜';
   const bannerImageUrl = `${import.meta.env.BASE_URL}images/roadshow/location-select-banner.png`;
 
-  const { users, addUser, updateUser, deleteUser, setActiveLocation, isLoading } = useGuessMusicStore();
+  const { users, addUser, updateUser, deleteUser, setActiveLocation, isLoading, error } = useGuessMusicStore();
   const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
   const [isEditing, setIsEditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [showSearch, setShowSearch] = useState(false);
+  const [editDrafts, setEditDrafts] = useState<Record<string, GuessUserDraft>>({});
   const [sortConfig, setSortConfig] = useState<{ key: SortKey; direction: SortDirection }>({
     key: 'rank',
     direction: 'asc',
   });
+  const editable = isAdmin && isEditing;
 
   useEffect(() => {
     void setActiveLocation(locationKey);
   }, [locationKey, setActiveLocation]);
+
+  const updateDraft = (userId: string, field: keyof GuessUserDraft, value: string) => {
+    const user = users.find((item) => item.id === userId);
+    if (!user) return;
+
+    setEditDrafts((previous) => {
+      const current = previous[userId] ?? toDraft(user);
+      return {
+        ...previous,
+        [userId]: {
+          ...current,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const commitDraft = async (userId: string) => {
+    const user = users.find((item) => item.id === userId);
+    if (!user) return;
+
+    const draft = editDrafts[userId] ?? toDraft(user);
+    const nextName = draft.name.trim() || user.name;
+    const parsedCount = Number.parseInt(draft.count, 10);
+    const parsedParticipationCount = Number.parseInt(draft.participationCount, 10);
+    const nextCount = Number.isFinite(parsedCount) ? parsedCount : user.count;
+    const nextParticipationCount = Number.isFinite(parsedParticipationCount) ? parsedParticipationCount : user.participationCount;
+
+    if (nextName === user.name && nextCount === user.count && nextParticipationCount === user.participationCount) {
+      setEditDrafts((previous) => {
+        if (!(user.id in previous)) return previous;
+        const next = { ...previous };
+        delete next[user.id];
+        return next;
+      });
+      return;
+    }
+
+    await updateUser(user.id, nextName, nextCount, nextParticipationCount);
+    setEditDrafts((previous) => {
+      if (!(user.id in previous)) return previous;
+      const next = { ...previous };
+      delete next[user.id];
+      return next;
+    });
+  };
+
+  const handleEnterToCommit = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+      event.currentTarget.blur();
+    }
+  };
 
   const handleSort = (key: SortKey) => {
     setSortConfig((current) => ({
@@ -74,8 +139,6 @@ export const GuessMusicPage = () => {
     void addUser('新选手', 0, 1);
   };
 
-  const editable = isAdmin && isEditing;
-
   return (
     <div className="min-h-screen bg-teal-50/50">
       <div className="relative h-48 w-full overflow-hidden rounded-b-[2rem] shadow-md">
@@ -94,7 +157,10 @@ export const GuessMusicPage = () => {
 
         {isAdmin ? (
           <button
-            onClick={() => setIsEditing((v) => !v)}
+            onClick={() => {
+              setEditDrafts({});
+              setIsEditing((v) => !v);
+            }}
             className="absolute top-4 right-4 rounded-full bg-black/10 p-2 text-white/80 backdrop-blur-sm transition-colors hover:text-white"
           >
             {isEditing ? <Check size={24} /> : <Edit2 size={24} />}
@@ -187,6 +253,11 @@ export const GuessMusicPage = () => {
           </div>
 
           <div className="mt-2 space-y-2 px-1">
+            {error ? (
+              <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-center text-xs text-red-500">
+                数据加载失败：{error}
+              </div>
+            ) : null}
             {isLoading ? (
               <div className="rounded-xl bg-white/50 py-10 text-center text-gray-400">加载中...</div>
             ) : filteredAndSortedUsers.length > 0 ? (
@@ -200,8 +271,10 @@ export const GuessMusicPage = () => {
                     {editable ? (
                       <input
                         type="text"
-                        value={item.name}
-                        onChange={(event) => void updateUser(item.id, event.target.value, item.count, item.participationCount)}
+                        value={(editDrafts[item.id] ?? toDraft(item)).name}
+                        onChange={(event) => updateDraft(item.id, 'name', event.target.value)}
+                        onBlur={() => void commitDraft(item.id)}
+                        onKeyDown={handleEnterToCommit}
                         className="w-full border-b border-teal-200 bg-gray-50 text-center text-gray-700 outline-none focus:border-teal-500"
                       />
                     ) : (
@@ -213,8 +286,10 @@ export const GuessMusicPage = () => {
                     {editable ? (
                       <input
                         type="number"
-                        value={item.count}
-                        onChange={(event) => void updateUser(item.id, item.name, Number(event.target.value), item.participationCount)}
+                        value={(editDrafts[item.id] ?? toDraft(item)).count}
+                        onChange={(event) => updateDraft(item.id, 'count', event.target.value)}
+                        onBlur={() => void commitDraft(item.id)}
+                        onKeyDown={handleEnterToCommit}
                         className="w-full border-b border-teal-200 bg-gray-50 text-center font-bold text-teal-600 outline-none focus:border-teal-500"
                       />
                     ) : (
@@ -228,8 +303,10 @@ export const GuessMusicPage = () => {
                     {editable ? (
                       <input
                         type="number"
-                        value={item.participationCount}
-                        onChange={(event) => void updateUser(item.id, item.name, item.count, Number(event.target.value))}
+                        value={(editDrafts[item.id] ?? toDraft(item)).participationCount}
+                        onChange={(event) => updateDraft(item.id, 'participationCount', event.target.value)}
+                        onBlur={() => void commitDraft(item.id)}
+                        onKeyDown={handleEnterToCommit}
                         className="w-full border-b border-teal-200 bg-gray-50 text-center text-xs text-gray-500 outline-none focus:border-teal-500"
                       />
                     ) : (

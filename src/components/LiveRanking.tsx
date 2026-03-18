@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Guitar, Medal, Trash2 } from 'lucide-react';
-import { useRankingStore } from '../store/useRankingStore';
+import { useState, type KeyboardEvent } from 'react';
+import { useRankingStore, type User } from '../store/useRankingStore';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -11,12 +12,64 @@ interface LiveRankingProps {
   editable?: boolean;
 }
 
+type RankingDraft = {
+  name: string;
+  score: string;
+};
+
 export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
-  const { users, updateUser, deleteUser } = useRankingStore();
+  const { users, updateUser, deleteUser, error } = useRankingStore();
   const navigate = useNavigate();
+  const [drafts, setDrafts] = useState<Record<string, RankingDraft>>({});
 
   // Take only top 5 for preview, or all if no limit
   const displayUsers = limit ? (users || []).slice(0, limit) : (users || []);
+
+  const getDraft = (user: User): RankingDraft => drafts[user.id] ?? { name: user.name, score: String(user.score) };
+
+  const updateDraft = (user: User, field: keyof RankingDraft, value: string) => {
+    setDrafts((previous) => {
+      const current = previous[user.id] ?? { name: user.name, score: String(user.score) };
+      return {
+        ...previous,
+        [user.id]: {
+          ...current,
+          [field]: value,
+        },
+      };
+    });
+  };
+
+  const commitDraft = async (user: User) => {
+    const draft = getDraft(user);
+    const nextName = draft.name.trim() || user.name;
+    const parsedScore = Number.parseInt(draft.score, 10);
+    const nextScore = Number.isFinite(parsedScore) ? parsedScore : user.score;
+
+    if (nextName === user.name && nextScore === user.score) {
+      setDrafts((previous) => {
+        if (!(user.id in previous)) return previous;
+        const next = { ...previous };
+        delete next[user.id];
+        return next;
+      });
+      return;
+    }
+
+    await updateUser(user.id, nextName, nextScore);
+    setDrafts((previous) => {
+      if (!(user.id in previous)) return previous;
+      const next = { ...previous };
+      delete next[user.id];
+      return next;
+    });
+  };
+
+  const handleEnterToCommit = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !event.nativeEvent.isComposing) {
+      event.currentTarget.blur();
+    }
+  };
 
   const getRankStyle = (rank: number) => {
     switch (rank) {
@@ -50,6 +103,17 @@ export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
   return (
     <ul className="space-y-3">
       <AnimatePresence>
+        {error ? (
+          <motion.div
+            key="ranking-error"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-center text-xs text-red-500"
+          >
+            数据加载失败：{error}
+          </motion.div>
+        ) : null}
+
         {displayUsers.length > 0 ? (
           displayUsers.map((user) => {
           const style = getRankStyle(user.rank);
@@ -96,8 +160,10 @@ export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
                 {editable ? (
                   <input 
                     type="text" 
-                    value={user.name} 
-                    onChange={(e) => updateUser(user.id, e.target.value, user.score)}
+                    value={getDraft(user).name}
+                    onChange={(e) => updateDraft(user, 'name', e.target.value)}
+                    onBlur={() => void commitDraft(user)}
+                    onKeyDown={handleEnterToCommit}
                     className="w-full bg-transparent border-b border-gray-300 focus:border-jieyou-mint outline-none text-jieyou-text font-medium"
                   />
                 ) : (
@@ -112,8 +178,10 @@ export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
                 {editable ? (
                   <input 
                     type="number" 
-                    value={user.score} 
-                    onChange={(e) => updateUser(user.id, user.name, Number(e.target.value))}
+                    value={getDraft(user).score}
+                    onChange={(e) => updateDraft(user, 'score', e.target.value)}
+                    onBlur={() => void commitDraft(user)}
+                    onKeyDown={handleEnterToCommit}
                     className={clsx(
                       "w-16 bg-transparent border-b border-gray-300 focus:border-jieyou-mint outline-none font-bold text-lg text-right",
                       isTop3 ? style.iconColor : "text-jieyou-text"

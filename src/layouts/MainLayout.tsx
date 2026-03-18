@@ -6,6 +6,7 @@ import { useRankingStore } from '../store/useRankingStore';
 import { useSongRequestStore } from '../store/useSongRequestStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useProfileStore } from '../store/useProfileStore';
+import { isAdminEmail } from '../lib/permissions';
 
 let hasInitializedCloudData = false;
 
@@ -13,8 +14,10 @@ export const MainLayout = () => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';
   const user = useAuthStore((state) => state.user);
+  const isAuthLoading = useAuthStore((state) => state.isLoading);
   const userUid = user?.uid;
   const isAnonymousUser = Boolean(user?.isAnonymous);
+  const isAdmin = isAdminEmail(user?.email);
 
   // Guard against duplicate init in React StrictMode (dev).
   useEffect(() => {
@@ -22,16 +25,28 @@ export const MainLayout = () => {
     hasInitializedCloudData = true;
 
     // Initialize Auth first
-    useAuthStore.getState().initAuth().then(() => {
-      const songRequestStore = useSongRequestStore.getState();
-      // Then fetch data
-      void Promise.allSettled([
-        useGuessMusicStore.getState().fetchUsers(),
-        useRankingStore.getState().fetchUsers(),
-        songRequestStore.cleanupTrash().then(() => songRequestStore.fetchRequests()),
-      ]);
-    });
+    void useAuthStore.getState().initAuth();
   }, []);
+
+  useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
+    const songRequestStore = useSongRequestStore.getState();
+    const tasks: Promise<unknown>[] = [
+      useGuessMusicStore.getState().fetchUsers(),
+      useRankingStore.getState().fetchUsers(),
+    ];
+
+    if (isAdmin) {
+      tasks.push(songRequestStore.cleanupTrash().then(() => songRequestStore.fetchRequests()));
+    } else {
+      tasks.push(songRequestStore.fetchRequests());
+    }
+
+    void Promise.allSettled(tasks);
+  }, [isAdmin, isAuthLoading, user?.email, user?.uid]);
 
   useEffect(() => {
     if (!userUid || isAnonymousUser) {
