@@ -26,8 +26,10 @@ interface RankingState {
   fetchUsers: () => Promise<void>;
   addUser: (name: string, score: number) => Promise<void>;
   updateUser: (id: string, name: string, score: number) => Promise<void>;
+  reorderUsers: (orderedUserIds: string[]) => Promise<void>;
   deleteUser: (id: string) => Promise<void>;
   addHistoryRecord: (userId: string, record: Omit<HistoryRecord, 'id' | 'totalScore' | 'deletedAt'>) => Promise<void>;
+  addHistoryRecordBatch: (userIds: string[], record: Omit<HistoryRecord, 'id' | 'totalScore' | 'deletedAt'>) => Promise<void>;
   updateHistoryRecord: (userId: string, recordId: string, updates: Partial<Omit<HistoryRecord, 'id' | 'totalScore' | 'deletedAt'>>) => Promise<void>;
   deleteHistoryRecord: (userId: string, recordId: string) => Promise<void>; // Soft delete
   restoreHistoryRecord: (userId: string, recordId: string) => Promise<void>; // Restore
@@ -96,8 +98,15 @@ export const useRankingStore = create<RankingState>((set, get) => ({
         users = newRes.data.map(mapRankingUserDoc);
       }
 
-      // Sort and update rank
-      users.sort((a, b) => b.score - a.score);
+      // Keep manual ranking order first; fall back to score when rank is invalid.
+      users.sort((a, b) => {
+        const rankA = Number.isFinite(a.rank) && a.rank > 0 ? a.rank : Number.MAX_SAFE_INTEGER;
+        const rankB = Number.isFinite(b.rank) && b.rank > 0 ? b.rank : Number.MAX_SAFE_INTEGER;
+        if (rankA !== rankB) return rankA - rankB;
+        if (b.score !== a.score) return b.score - a.score;
+        return a.name.localeCompare(b.name);
+      });
+
       const rankedUsers = users.map((user, index) => ({
         ...user,
         rank: index + 1
@@ -120,7 +129,7 @@ export const useRankingStore = create<RankingState>((set, get) => ({
       const newUser = {
         name,
         score,
-        rank: 0,
+        rank: get().users.length + 1,
         history: []
       };
       await db.collection('Dayitong_ranking_users').add(newUser);
@@ -141,6 +150,32 @@ export const useRankingStore = create<RankingState>((set, get) => ({
       get().fetchUsers();
     } catch (err) {
       console.error('Update user failed:', err);
+    }
+  },
+
+  reorderUsers: async (orderedUserIds) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
+    if (!orderedUserIds.length) return;
+
+    try {
+      await ensureAuth();
+      const currentUsers = get().users;
+      const currentIds = currentUsers.map((user) => user.id);
+      const knownIdSet = new Set(currentIds);
+      const deduplicatedOrderedIds = orderedUserIds.filter((id, index) => knownIdSet.has(id) && orderedUserIds.indexOf(id) === index);
+      const missingIds = currentIds.filter((id) => !deduplicatedOrderedIds.includes(id));
+      const finalOrder = [...deduplicatedOrderedIds, ...missingIds];
+
+      await Promise.all(
+        finalOrder.map((userId, index) => db.collection('Dayitong_ranking_users').doc(userId).update({ rank: index + 1 }))
+      );
+
+      await get().fetchUsers();
+    } catch (err) {
+      console.error('Reorder users failed:', err);
     }
   },
 
@@ -184,6 +219,41 @@ export const useRankingStore = create<RankingState>((set, get) => ({
       get().fetchUsers();
     } catch (err) {
       console.error('Add history failed:', err);
+    }
+  },
+
+  addHistoryRecordBatch: async (userIds, record) => {
+    if (!isCurrentUserAdmin()) {
+      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
+      return;
+    }
+    if (!userIds.length) return;
+
+    try {
+      await ensureAuth();
+      const usersById = new Map(get().users.map((user) => [user.id, user]));
+      const updatePromises = userIds.map(async (userId, index) => {
+        const user = usersById.get(userId);
+        if (!user) return;
+
+        const newScore = user.score + record.scoreChange;
+        const newHistoryRecord: HistoryRecord = {
+          id: `h${Date.now()}-${index}`,
+          ...record,
+          totalScore: newScore,
+        };
+
+        const newHistory = [newHistoryRecord, ...user.history];
+        await db.collection('Dayitong_ranking_users').doc(userId).update({
+          score: newScore,
+          history: newHistory,
+        });
+      });
+
+      await Promise.all(updatePromises);
+      await get().fetchUsers();
+    } catch (err) {
+      console.error('Batch add history failed:', err);
     }
   },
 

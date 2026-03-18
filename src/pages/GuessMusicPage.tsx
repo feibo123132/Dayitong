@@ -22,7 +22,7 @@ const toDraft = (user: { name: string; count: number; participationCount: number
 export const GuessMusicPage = () => {
   const navigate = useNavigate();
   const locationKey: GuessLocationKey = 'gx-egg';
-  const locationTitle = '校园路演听歌识曲榜';
+  const locationTitle = '医大猜歌榜';
   const bannerImageUrl = `${import.meta.env.BASE_URL}images/roadshow/location-select-banner.png`;
 
   const { users, addUser, updateUser, deleteUser, setActiveLocation, isLoading, error } = useGuessMusicStore();

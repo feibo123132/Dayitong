@@ -14,7 +14,7 @@ export const GuessMusicRankingPage = () => {
     <div className="min-h-screen bg-orange-50 pb-safe">
       {/* Header Banner */}
       <div className="bg-gradient-to-r from-orange-400 to-red-500 p-6 text-white text-center rounded-b-3xl shadow-lg mb-6">
-        <h1 className="text-2xl font-bold tracking-wider">校园路演听歌识曲榜</h1>
+        <h1 className="text-2xl font-bold tracking-wider">医大猜歌榜</h1>
         <p className="text-sm opacity-90 mt-2">快来挑战你的曲库量！</p>
       </div>
 

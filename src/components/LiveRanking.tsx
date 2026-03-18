@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { Guitar, Medal, Trash2 } from 'lucide-react';
+import { CheckCircle2, Circle, GripVertical, Guitar, Medal, Trash2 } from 'lucide-react';
 import { useState, type KeyboardEvent } from 'react';
 import { useRankingStore, type User } from '../store/useRankingStore';
 import { clsx } from 'clsx';
@@ -10,6 +10,11 @@ import { useNavigate } from 'react-router-dom';
 interface LiveRankingProps {
   limit?: number;
   editable?: boolean;
+  selectable?: boolean;
+  selectedUserIds?: string[];
+  onToggleSelect?: (userId: string) => void;
+  reorderable?: boolean;
+  onReorder?: (orderedUserIds: string[]) => void;
 }
 
 type RankingDraft = {
@@ -17,10 +22,21 @@ type RankingDraft = {
   score: string;
 };
 
-export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
+export const LiveRanking = ({
+  limit,
+  editable = false,
+  selectable = false,
+  selectedUserIds = [],
+  onToggleSelect,
+  reorderable = false,
+  onReorder,
+}: LiveRankingProps) => {
   const { users, updateUser, deleteUser, error } = useRankingStore();
   const navigate = useNavigate();
   const [drafts, setDrafts] = useState<Record<string, RankingDraft>>({});
+  const [draggingUserId, setDraggingUserId] = useState<string | null>(null);
+  const selectedUserIdSet = new Set(selectedUserIds);
+  const isReorderMode = editable && reorderable && !selectable;
 
   // Take only top 5 for preview, or all if no limit
   const displayUsers = limit ? (users || []).slice(0, limit) : (users || []);
@@ -71,6 +87,17 @@ export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
     }
   };
 
+  const reorderUserIds = (sourceUserId: string, targetUserId: string): string[] => {
+    const userIds = displayUsers.map((user) => user.id);
+    const fromIndex = userIds.indexOf(sourceUserId);
+    const toIndex = userIds.indexOf(targetUserId);
+    if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return userIds;
+    const nextUserIds = [...userIds];
+    const [movedId] = nextUserIds.splice(fromIndex, 1);
+    nextUserIds.splice(toIndex, 0, movedId);
+    return nextUserIds;
+  };
+
   const getRankStyle = (rank: number) => {
     switch (rank) {
       case 1:
@@ -115,9 +142,10 @@ export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
         ) : null}
 
         {displayUsers.length > 0 ? (
-          displayUsers.map((user) => {
-          const style = getRankStyle(user.rank);
-          const isTop3 = user.rank <= 3;
+          displayUsers.map((user, index) => {
+          const effectiveRank = isReorderMode ? index + 1 : user.rank;
+          const style = getRankStyle(effectiveRank);
+          const isTop3 = effectiveRank <= 3;
 
           return (
             <motion.li
@@ -128,6 +156,10 @@ export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
               exit={{ opacity: 0, scale: 0.9 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               onClick={() => {
+                if (selectable) {
+                  onToggleSelect?.(user.id);
+                  return;
+                }
                 if (!editable) {
                   navigate(`/ranking/${user.id}`);
                 }
@@ -137,15 +169,45 @@ export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
                   "rounded-3xl p-4 flex items-center shadow-sm border transition-all duration-300",
                   editable ? "cursor-default" : "cursor-pointer hover:shadow-md active:scale-[0.98]",
                   isTop3 ? style.bgColor : "bg-white",
-                  isTop3 ? style.borderColor : "border-transparent hover:border-jieyou-mint"
+                  isTop3 ? style.borderColor : "border-transparent hover:border-jieyou-mint",
+                  selectable && selectedUserIdSet.has(user.id) && "ring-2 ring-jieyou-mint/60 border-jieyou-mint/50"
                 )
               )}
+              onDragOver={(event) => {
+                if (!isReorderMode || !draggingUserId) return;
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+              }}
+              onDrop={(event) => {
+                if (!isReorderMode || !draggingUserId) return;
+                event.preventDefault();
+                const nextUserIds = reorderUserIds(draggingUserId, user.id);
+                setDraggingUserId(null);
+                onReorder?.(nextUserIds);
+              }}
+              onDragEnd={() => setDraggingUserId(null)}
             >
+              {isReorderMode ? (
+                <button
+                  type="button"
+                  draggable
+                  onDragStart={(event) => {
+                    setDraggingUserId(user.id);
+                    event.dataTransfer.effectAllowed = 'move';
+                    event.dataTransfer.setData('text/plain', user.id);
+                  }}
+                  onClick={(event) => event.preventDefault()}
+                  className="mr-1 rounded p-1 text-gray-300 transition-colors hover:text-gray-500 cursor-grab active:cursor-grabbing"
+                  aria-label="拖动排序"
+                >
+                  <GripVertical size={16} />
+                </button>
+              ) : null}
               <div className="w-8 flex justify-center flex-shrink-0">
                 {isTop3 ? (
                   <Medal size={24} className={style.iconColor} />
                 ) : (
-                  <span className="font-bold text-xl text-gray-400">{user.rank}</span>
+                  <span className="font-bold text-xl text-gray-400">{effectiveRank}</span>
                 )}
               </div>
               
@@ -175,6 +237,19 @@ export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
               </div>
               
               <div className="flex items-center space-x-2">
+                {selectable ? (
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      onToggleSelect?.(user.id);
+                    }}
+                    className="text-jieyou-mint"
+                    aria-label={selectedUserIdSet.has(user.id) ? '取消选择用户' : '选择用户'}
+                  >
+                    {selectedUserIdSet.has(user.id) ? <CheckCircle2 size={20} /> : <Circle size={20} />}
+                  </button>
+                ) : null}
                 {editable ? (
                   <input 
                     type="number" 
@@ -196,7 +271,7 @@ export const LiveRanking = ({ limit, editable = false }: LiveRankingProps) => {
                   </div>
                 )}
                 
-                {editable && (
+                {editable && !selectable && (
                   <button 
                     onClick={() => deleteUser(user.id)}
                     className="p-1 text-red-400 hover:text-red-600 transition-colors"
