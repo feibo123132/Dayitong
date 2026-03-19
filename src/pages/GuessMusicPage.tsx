@@ -184,8 +184,8 @@ export const GuessMusicPage = () => {
               </div>
             </div>
 
-            <div className="group relative flex-1 text-center">
-              <div className="flex cursor-pointer items-center justify-center rounded py-1 transition-colors hover:bg-white/10" onClick={() => setShowSearch((v) => !v)}>
+            <div className="group relative min-w-0 flex-1 overflow-hidden text-center">
+              <div className="flex cursor-pointer items-center justify-center truncate rounded py-1 transition-colors hover:bg-white/10" onClick={() => setShowSearch((v) => !v)}>
                 昵称
                 <Search size={14} className="ml-1 opacity-70" />
               </div>
@@ -267,7 +267,7 @@ export const GuessMusicPage = () => {
                     <span className={`text-lg font-bold ${item.rank <= 3 ? 'text-teal-500' : 'text-gray-500'}`}>{item.rank}</span>
                   </div>
 
-                  <div className="min-w-0 flex-1 px-1">
+                  <div className="min-w-0 flex-1 overflow-hidden px-1 text-center">
                     {editable ? (
                       <input
                         type="text"
@@ -275,10 +275,10 @@ export const GuessMusicPage = () => {
                         onChange={(event) => updateDraft(item.id, 'name', event.target.value)}
                         onBlur={() => void commitDraft(item.id)}
                         onKeyDown={handleEnterToCommit}
-                        className="w-full border-b border-teal-200 bg-gray-50 text-center text-gray-700 outline-none focus:border-teal-500"
+                        className="w-full truncate border-b border-teal-200 bg-gray-50 text-center text-gray-700 outline-none focus:border-teal-500"
                       />
                     ) : (
-                      <div className="truncate text-center font-medium text-gray-700">{item.name}</div>
+                      <div className="truncate font-medium text-gray-700">{item.name}</div>
                     )}
                   </div>
 
