@@ -58,10 +58,10 @@ export const CurrentActivity = () => {
             <h3 className="text-base font-bold text-slate-800 group-hover:text-emerald-700 transition-colors">春分踏青活动季</h3>
             <div className="flex items-center text-[10px] text-slate-500 mt-0.5 space-x-2">
               <span className="flex items-center">
-                <Calendar size={10} className="mr-1" /> 2026.03.20 - 2026.04.20
+                <Calendar size={10} className="mr-1" /> 03.20 - 03.26
               </span>
               <span className="flex items-center">
-                <MapPin size={10} className="mr-1" /> 校园草地 · 线上同步
+                <MapPin size={10} className="mr-1" /> 校园草地
               </span>
             </div>
           </div>

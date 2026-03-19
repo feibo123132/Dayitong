@@ -41,7 +41,8 @@ const CAROUSEL_ITEMS: CarouselItem[] = [
     imageUrl: `${import.meta.env.BASE_URL}images/home/carousel-2.png`,
     textColor: 'text-white',
     title: '',
-    subtitle: ''
+    subtitle: '',
+    href: 'points-reward.html'
   },
   {
     id: 3,
