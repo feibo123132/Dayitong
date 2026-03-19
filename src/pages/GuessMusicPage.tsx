@@ -172,7 +172,7 @@ export const GuessMusicPage = () => {
         <div className="rounded-3xl border border-white/50 bg-white/40 p-2 shadow-lg backdrop-blur-sm">
           <div className="flex items-center rounded-t-2xl bg-gradient-to-r from-jieyou-mint to-teal-400 px-4 py-3 text-sm font-bold text-white shadow-sm">
             <div
-              className="flex w-10 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
+              className="flex w-8 sm:w-10 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
               onClick={() => handleSort('rank')}
             >
               <div className="flex items-center">
@@ -184,7 +184,7 @@ export const GuessMusicPage = () => {
               </div>
             </div>
 
-            <div className="group relative min-w-0 flex-1 overflow-hidden text-center">
+            <div className="group relative min-w-[60px] flex-1 overflow-hidden text-center">
               <div className="flex cursor-pointer items-center justify-center truncate rounded py-1 transition-colors hover:bg-white/10" onClick={() => setShowSearch((v) => !v)}>
                 昵称
                 <Search size={14} className="ml-1 opacity-70" />
@@ -206,7 +206,7 @@ export const GuessMusicPage = () => {
             </div>
 
             <div
-              className="flex w-16 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
+              className="flex w-[52px] sm:w-16 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
               onClick={() => handleSort('count')}
             >
               <div className="flex items-center">
@@ -219,7 +219,7 @@ export const GuessMusicPage = () => {
             </div>
 
             <div
-              className="flex w-16 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
+              className="flex w-[52px] sm:w-16 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
               onClick={() => handleSort('rate')}
             >
               <div className="flex items-center">
@@ -232,7 +232,7 @@ export const GuessMusicPage = () => {
             </div>
 
             <div
-              className="flex w-16 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
+              className="flex w-[48px] sm:w-16 cursor-pointer flex-col items-center justify-center rounded py-1 text-center transition-colors hover:bg-white/10"
               onClick={() => handleSort('participationCount')}
             >
               <div className="flex items-center">
@@ -263,11 +263,11 @@ export const GuessMusicPage = () => {
             ) : filteredAndSortedUsers.length > 0 ? (
               filteredAndSortedUsers.map((item) => (
                 <div key={item.id} className="flex items-center rounded-xl border border-teal-100/50 bg-white px-4 py-3 text-sm shadow-sm transition-shadow hover:shadow-md">
-                  <div className="w-10 flex-shrink-0 text-center">
+                  <div className="w-8 sm:w-10 flex-shrink-0 text-center">
                     <span className={`text-lg font-bold ${item.rank <= 3 ? 'text-teal-500' : 'text-gray-500'}`}>{item.rank}</span>
                   </div>
 
-                  <div className="min-w-0 flex-1 overflow-hidden px-1 text-center">
+                  <div className="min-w-[60px] flex-1 overflow-hidden px-1 text-center">
                     {editable ? (
                       <input
                         type="text"
@@ -282,7 +282,7 @@ export const GuessMusicPage = () => {
                     )}
                   </div>
 
-                  <div className="w-16 flex-shrink-0 text-center">
+                  <div className="w-[52px] sm:w-16 flex-shrink-0 text-center">
                     {editable ? (
                       <input
                         type="number"
@@ -297,9 +297,9 @@ export const GuessMusicPage = () => {
                     )}
                   </div>
 
-                  <div className="w-16 flex-shrink-0 truncate text-center text-xs text-gray-500">{item.rate}</div>
+                  <div className="w-[52px] sm:w-16 flex-shrink-0 truncate text-center text-xs text-gray-500">{item.rate}</div>
 
-                  <div className="w-16 flex-shrink-0 text-center">
+                  <div className="w-[48px] sm:w-16 flex-shrink-0 text-center">
                     {editable ? (
                       <input
                         type="number"
