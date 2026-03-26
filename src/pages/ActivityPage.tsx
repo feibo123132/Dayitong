@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useActivityStore } from '../store/useActivityStore';
-import { ACTIVITY_MENU_GROUPS, FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus } from './activityData';
+import { ACTIVITY_MENU_GROUPS, FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus, getDefaultFestivalId } from './activityData';
 
 type FestivalCulture = {
   quote: string;
@@ -66,7 +66,7 @@ export const ActivityPage = () => {
   const [now, setNow] = useState(() => Date.now());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedMenuGroupIds, setExpandedMenuGroupIds] = useState<string[]>([]);
-  const [selectedFestivalId, setSelectedFestivalId] = useState(FESTIVAL_TEMPLATES[0].id);
+  const [selectedFestivalId, setSelectedFestivalId] = useState(() => getDefaultFestivalId(Date.now()));
   const [brokenCustomImageByFestival, setBrokenCustomImageByFestival] = useState<Record<string, boolean>>({});
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -341,4 +341,3 @@ export const ActivityPage = () => {
     </div>
   );
 };
-

@@ -348,3 +348,25 @@ export const formatCountdown = (ms: number): string => {
     .toString()
     .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 };
+
+export const getDefaultFestivalId = (now: number): string => {
+  if (FESTIVAL_TEMPLATES.length === 0) return '';
+
+  const activeFestivals = FESTIVAL_TEMPLATES.filter((festival) => now >= festival.startAt && now <= festival.endAt);
+  if (activeFestivals.length > 0) {
+    return activeFestivals.reduce((latestStartFestival, festival) =>
+      festival.startAt > latestStartFestival.startAt ? festival : latestStartFestival
+    ).id;
+  }
+
+  const upcomingFestivals = FESTIVAL_TEMPLATES.filter((festival) => festival.startAt > now);
+  if (upcomingFestivals.length > 0) {
+    return upcomingFestivals.reduce((nearestFestival, festival) =>
+      festival.startAt < nearestFestival.startAt ? festival : nearestFestival
+    ).id;
+  }
+
+  return FESTIVAL_TEMPLATES.reduce((latestEndFestival, festival) =>
+    festival.endAt > latestEndFestival.endAt ? festival : latestEndFestival
+  ).id;
+};

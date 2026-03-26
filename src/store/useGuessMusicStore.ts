@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { HistoryRecord } from '../types/history';
 import { db, ensureAuth } from '../lib/cloudbase';
+import { calculateGuessMusicRate } from '../lib/guessMusicRanking';
 import { EDIT_PERMISSION_DENIED_MESSAGE, isCurrentUserAdmin } from '../lib/permissions';
 
 export type { HistoryRecord };
@@ -33,8 +34,6 @@ interface GuessMusicState {
 type GuessUserDoc = Omit<GuessUser, 'id'> & { _id: string };
 
 const DEFAULT_LOCATION: GuessLocationKey = 'gx-egg';
-const SONGS_PER_ROUND = 4;
-
 const getErrorMessage = (error: unknown): string => {
   if (error instanceof Error && error.message) return error.message;
   if (
@@ -58,13 +57,6 @@ const mapGuessUserDoc = (user: GuessUserDoc): GuessUser => ({
   ...user,
   id: user._id,
 });
-
-const calculateRate = (count: number, participationCount: number): string => {
-  if (participationCount === 0) return '0%';
-  const totalSongs = participationCount * SONGS_PER_ROUND;
-  const validCount = Math.min(count, totalSongs);
-  return `${Math.round((validCount / totalSongs) * 100)}%`;
-};
 
 const sortAndRankUsers = (users: GuessUser[]): GuessUser[] => {
   const sortedUsers = [...users].sort((a, b) => {
@@ -150,7 +142,7 @@ export const useGuessMusicStore = create<GuessMusicState>((set, get) => ({
         name,
         count,
         participationCount,
-        rate: calculateRate(count, participationCount),
+        rate: calculateGuessMusicRate(count, participationCount),
         rank: 0,
         history: [],
       });
@@ -171,7 +163,7 @@ export const useGuessMusicStore = create<GuessMusicState>((set, get) => ({
         name,
         count,
         participationCount,
-        rate: calculateRate(count, participationCount),
+        rate: calculateGuessMusicRate(count, participationCount),
       });
       await get().setActiveLocation('gx-egg');
     } catch (error: unknown) {
