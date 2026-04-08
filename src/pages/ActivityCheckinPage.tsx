@@ -3,18 +3,11 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom';
 import { useActivityStore } from '../store/useActivityStore';
 import { useAuthStore } from '../store/useAuthStore';
-import { FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus } from './activityData';
+import { FESTIVAL_CHECKIN_BLESSINGS, FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus } from './activityData';
 import { isAdminEmail } from '../lib/permissions';
 
 const HOLD_DURATION_MS = 3000;
 const CONFETTI_COLORS = ['#f97316', '#22c55e', '#3b82f6', '#f59e0b', '#ec4899', '#14b8a6', '#a855f7'];
-
-const CHECKIN_BLESSINGS = [
-  '花灯常明，愿你所愿皆有回响。',
-  '元宵喜乐，愿你此刻被温柔照亮。',
-  '人月两圆，愿你一路有歌也有光。',
-  '今夜签到成功，祝你节日快乐顺遂。',
-];
 
 const VIDEO_PLACEHOLDER_BLOCKS = [
   { id: 'v1', title: '祝福视频位 A', hint: '主舞台镜头（16:9）' },
@@ -82,6 +75,7 @@ export const ActivityCheckinPage = () => {
   const userUid = user?.uid ?? null;
   const isCheckedIn = completedTaskIds.includes('checkin');
   const confettiPieces = useMemo(() => createConfettiPieces(celebrationSeed), [celebrationSeed]);
+  const checkinBlessings = festival ? FESTIVAL_CHECKIN_BLESSINGS[festival.id] ?? FESTIVAL_CHECKIN_BLESSINGS['lantern-festival-2026'] : [];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -184,7 +178,7 @@ export const ActivityCheckinPage = () => {
 
   const triggerCelebration = () => {
     const nextSeed = celebrationSeed + 1;
-    const message = CHECKIN_BLESSINGS[nextSeed % CHECKIN_BLESSINGS.length];
+    const message = checkinBlessings[nextSeed % checkinBlessings.length] ?? '签到成功，愿你今天顺顺利利。';
     setBlessingText(message);
     setCelebrationSeed(nextSeed);
     setShowConfetti(true);

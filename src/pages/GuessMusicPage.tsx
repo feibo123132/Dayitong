@@ -1,4 +1,4 @@
-﻿﻿import { ArrowDown, ArrowLeft, ArrowUp, Check, Edit2, Plus, Search, Trash2 } from 'lucide-react';
+﻿﻿﻿﻿import { ArrowDown, ArrowLeft, ArrowUp, Check, Edit2, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGuessMusicRankSections, getGuessMusicTableMetrics, type GuessMusicRankSectionKey } from '../lib/guessMusicRanking';

@@ -3,61 +3,14 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useActivityStore } from '../store/useActivityStore';
-import { ACTIVITY_MENU_GROUPS, FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus, getDefaultFestivalId } from './activityData';
-
-type FestivalCulture = {
-  quote: string;
-  source: string;
-  summary: string;
-  customs: string[];
-  customsImageName: string;
-  customsWarmMessage: string;
-  cultureCardClass: string;
-  customTagClass: string;
-};
-
-const FESTIVAL_CULTURE_MAP: Record<string, FestivalCulture> = {
-  'lantern-festival-2026': {
-    quote: '去年元夜时，花市灯如昼。',
-    source: '欧阳修《生查子·元夕》',
-    summary: '元宵重在灯火与团圆，夜游、灯会和互动民俗让节日更有温度。',
-    customs: ['吃汤圆', '赏花灯', '猜灯谜', '舞龙舞狮'],
-    customsImageName: 'lantern-customs-overview.png',
-    customsWarmMessage: '一灯一景一团圆，愿你在烟火与笑声里，收获新一年的温暖与心安。',
-    cultureCardClass: 'border-rose-100 bg-gradient-to-br from-rose-50 via-amber-50 to-white',
-    customTagClass: 'border-amber-200 bg-amber-50 text-amber-700',
-  },
-  'mid-autumn-2026': {
-    quote: '但愿人长久，千里共婵娟。',
-    source: '苏轼《水调歌头》',
-    summary: '中秋讲究望月寄情，月光与思念交织出最柔软的团圆时刻。',
-    customs: ['赏月', '吃月饼', '拜月祈福', '灯笼夜游'],
-    customsImageName: 'mid-autumn-customs-overview.png',
-    customsWarmMessage: '愿此刻月明人安，所念之人都在身边，所盼之事皆有回响。',
-    cultureCardClass: 'border-indigo-100 bg-gradient-to-br from-indigo-50 via-sky-50 to-white',
-    customTagClass: 'border-indigo-200 bg-indigo-50 text-indigo-700',
-  },
-  'graduation-season-2026': {
-    quote: '海内存知己，天涯若比邻。',
-    source: '王勃《送杜少府之任蜀州》',
-    summary: '毕业季是纪念与告别，也是带着勇气奔向下一段旅程。',
-    customs: ['毕业合影', '留言寄语', '师友送别', '纪念打卡'],
-    customsImageName: 'graduation-customs-overview.png',
-    customsWarmMessage: '把青春定格在笑容里，带着祝福继续出发，前路皆是好风景。',
-    cultureCardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-50 via-cyan-50 to-white',
-    customTagClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  },
-  'spring-equinox-2026': {
-    quote: '春分雨脚落声微，柳岸斜风带客归。',
-    source: '唐·徐铉《七绝·苏醒》',
-    summary: '春分昼夜平分，万物舒展，适合踏青、迎春和记录新的开始。',
-    customs: ['竖蛋', '踏青', '放风筝', '吃春菜'],
-    customsImageName: 'spring-equinox-customs-overview.png',
-    customsWarmMessage: '愿你在春风里轻装上阵，把新的希望种进每一天。',
-    cultureCardClass: 'border-emerald-100 bg-gradient-to-br from-emerald-50 via-lime-50 to-white',
-    customTagClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  },
-};
+import {
+  ACTIVITY_MENU_GROUPS,
+  FESTIVAL_CULTURES,
+  FESTIVAL_TEMPLATES,
+  formatCountdown,
+  getActivityStatus,
+  getDefaultFestivalId,
+} from './activityData';
 
 export const ActivityPage = () => {
   const navigate = useNavigate();
@@ -82,7 +35,7 @@ export const ActivityPage = () => {
 
   const userUid = user?.uid ?? null;
   const festival = FESTIVAL_TEMPLATES.find((item) => item.id === selectedFestivalId) ?? FESTIVAL_TEMPLATES[0];
-  const festivalCulture = FESTIVAL_CULTURE_MAP[festival.id] ?? FESTIVAL_CULTURE_MAP['lantern-festival-2026'];
+  const festivalCulture = FESTIVAL_CULTURES[festival.id] ?? FESTIVAL_CULTURES['lantern-festival-2026'];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -316,8 +269,10 @@ export const ActivityPage = () => {
 
           <div className="mt-3 rounded-xl border border-gray-100 overflow-hidden">
             {isCustomImageBroken ? (
-              <div className="min-h-[180px] bg-gradient-to-br from-slate-50 to-slate-100 flex items-center justify-center text-sm text-slate-400">
-                图片待补充：{festivalCulture.customsImageName}
+              <div className="min-h-[180px] bg-gradient-to-br from-slate-50 via-white to-slate-100 p-5">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">Festival Notes</p>
+                <p className="mt-2 text-base font-semibold text-slate-800">{festival.menuLabel} · 民俗印象</p>
+                <p className="mt-3 text-sm leading-6 text-slate-500">{festivalCulture.summary}</p>
               </div>
             ) : (
               <img
