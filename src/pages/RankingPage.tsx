@@ -1,6 +1,6 @@
 ﻿import { useState } from 'react';
 import { LiveRanking } from '../components/LiveRanking';
-import { ArrowLeft, Edit2, Check, Plus, Menu, Gift, UsersRound, X } from 'lucide-react';
+import { ArrowLeft, Edit2, Check, Plus, Menu, Gift, UsersRound, X, Search } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useRankingStore } from '../store/useRankingStore';
 import { useAuthStore } from '../store/useAuthStore';
@@ -20,6 +20,9 @@ export const RankingPage = () => {
   const [batchReason, setBatchReason] = useState(DEFAULT_BATCH_REASON);
   const [batchScoreChange, setBatchScoreChange] = useState(DEFAULT_BATCH_SCORE_CHANGE);
   const [isBatchSubmitting, setIsBatchSubmitting] = useState(false);
+  const [showCodeSearchModal, setShowCodeSearchModal] = useState(false);
+  const [searchDraft, setSearchDraft] = useState('');
+  const [rankingSearchKeyword, setRankingSearchKeyword] = useState('');
 
   const { addUser, addHistoryRecordBatch, reorderUsers } = useRankingStore();
   const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
@@ -80,6 +83,18 @@ export const RankingPage = () => {
     void reorderUsers(orderedUserIds);
   };
 
+  const handleOpenCodeSearch = () => {
+    setShowMenu(false);
+    setSearchDraft(rankingSearchKeyword);
+    setShowCodeSearchModal(true);
+  };
+
+  const handleApplyCodeSearch = (event: React.FormEvent) => {
+    event.preventDefault();
+    setRankingSearchKeyword(searchDraft.trim());
+    setShowCodeSearchModal(false);
+  };
+
   const parsedBatchScoreChange = Number(batchScoreChange);
   const isBatchScoreChangeValid = batchScoreChange.trim() !== '' && Number.isFinite(parsedBatchScoreChange);
 
@@ -102,7 +117,7 @@ export const RankingPage = () => {
           {showMenu && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setShowMenu(false)}></div>
-              <div className="animate-in slide-in-from-top-2 absolute right-0 top-full z-20 mt-2 w-40 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg fade-in">
+              <div className="animate-in slide-in-from-top-2 absolute right-0 top-full z-20 mt-2 w-44 overflow-hidden rounded-xl border border-gray-100 bg-white shadow-lg fade-in">
                 {isAdmin ? (
                   <>
                     <div
@@ -122,6 +137,10 @@ export const RankingPage = () => {
                     </div>
                   </>
                 ) : null}
+                <div className="flex cursor-pointer items-center px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50" onClick={handleOpenCodeSearch}>
+                  <Search size={18} className="mr-3 text-cyan-500" />
+                  <span className="text-sm font-medium">代号检索</span>
+                </div>
                 <div
                   className="flex cursor-pointer items-center px-4 py-3 text-gray-700 transition-colors hover:bg-gray-50"
                   onClick={() => {
@@ -159,6 +178,26 @@ export const RankingPage = () => {
         </section>
       ) : null}
 
+      {rankingSearchKeyword ? (
+        <section className="rounded-xl border border-cyan-100 bg-cyan-50/70 px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm text-cyan-700">
+              当前代号检索：<span className="font-semibold">{rankingSearchKeyword}</span>
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setRankingSearchKeyword('');
+                setSearchDraft('');
+              }}
+              className="rounded-md border border-cyan-200 px-2 py-1 text-xs font-medium text-cyan-700 transition-colors hover:bg-cyan-100"
+            >
+              清除
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       <LiveRanking
         editable={isAdmin && isEditing && !isBatchSelecting}
         selectable={isAdmin && isBatchSelecting}
@@ -166,6 +205,7 @@ export const RankingPage = () => {
         selectedUserIds={selectedUserIds}
         onToggleSelect={handleToggleSelectUser}
         onReorder={handleReorderUsers}
+        searchKeyword={rankingSearchKeyword}
       />
 
       {isAdmin && isEditing && !isBatchSelecting ? (
@@ -240,6 +280,40 @@ export const RankingPage = () => {
                 className="w-full rounded-xl bg-gradient-to-r from-jieyou-mint to-teal-500 py-3 font-bold text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isBatchSubmitting ? '处理中...' : '确认添加'}
+              </button>
+            </form>
+          </div>
+        </div>
+      ) : null}
+
+      {showCodeSearchModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-800">代号检索</h3>
+              <button onClick={() => setShowCodeSearchModal(false)} className="text-gray-400 transition-colors hover:text-gray-600" aria-label="关闭弹窗">
+                <X size={22} />
+              </button>
+            </div>
+
+            <form className="space-y-4" onSubmit={handleApplyCodeSearch}>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">代号 / 昵称 / 用户ID</label>
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="输入关键词后检索"
+                  value={searchDraft}
+                  onChange={(event) => setSearchDraft(event.target.value)}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 focus:border-jieyou-mint focus:outline-none"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full rounded-xl bg-gradient-to-r from-jieyou-mint to-teal-500 py-3 font-bold text-white transition-all hover:shadow-lg"
+              >
+                应用检索
               </button>
             </form>
           </div>

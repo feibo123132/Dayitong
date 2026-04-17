@@ -29,7 +29,7 @@ export const SongRequestTrashPage = () => {
 
   const handlePermanentDelete = (id: string) => {
     if (!isAdmin) return;
-    if (window.confirm('确定要彻底删除这条点歌吗？此操作不可恢复。')) {
+    if (window.confirm('确定要彻底删除这条记录吗？此操作不可恢复。')) {
       void permanentDeleteRequest(id);
     }
   };
@@ -52,9 +52,9 @@ export const SongRequestTrashPage = () => {
 
         <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
           <h1 className="text-3xl font-bold text-white drop-shadow-md tracking-wide flex items-center">
-            <MessageCircleHeart className="mr-2" /> 留言点歌台
+            <MessageCircleHeart className="mr-2" /> 许愿池
           </h1>
-          <p className="text-white/80 mt-2 text-sm">写下你想听的歌，送给想念的人</p>
+          <p className="text-white/80 mt-2 text-sm">已删除记录将于 7 天后自动清除</p>
         </div>
       </div>
 
@@ -66,9 +66,7 @@ export const SongRequestTrashPage = () => {
       </button>
 
       <div className="max-w-md mx-auto px-4 -mt-2 mb-3 relative z-10">
-        <div className="rounded-xl border border-gray-100 bg-white/90 px-3 py-2 text-xs text-gray-500">
-          已删除记录（7天后自动清除）
-        </div>
+        <div className="rounded-xl border border-gray-100 bg-white/90 px-3 py-2 text-xs text-gray-500">已删除记录（7天后自动清除）</div>
       </div>
 
       <div className="max-w-md mx-auto px-4 space-y-4">
@@ -127,9 +125,7 @@ export const SongRequestTrashPage = () => {
         ))}
 
         {trashRequests.length === 0 ? (
-          <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-400">
-            回收站是空的
-          </div>
+          <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-400">回收站是空的</div>
         ) : null}
 
         <div className="h-36"></div>

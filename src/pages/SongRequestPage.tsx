@@ -1,111 +1,82 @@
-import { ArrowLeft, Clock, Flame, Heart, MessageCircleHeart, Music, Send, Edit2, Trash2, Menu } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ArrowLeft, Candy, Gamepad2, Gift, Menu, MessageCircleHeart, Music, Send } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSongRequestStore } from '../store/useSongRequestStore';
-import type { SongRequest } from '../store/useSongRequestStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { isAdminEmail } from '../lib/permissions';
+import { buildWishSyncPayload, type WishCategoryId, syncWishToFeishu } from '../lib/wishSync';
+
+const WISH_TAB_ITEMS: Array<{ id: WishCategoryId; label: string; Icon: typeof Gift }> = [
+  { id: 'gift', label: '礼品', Icon: Gift },
+  { id: 'snack', label: '零食', Icon: Candy },
+  { id: 'play', label: '玩法', Icon: Gamepad2 },
+  { id: 'song', label: '点歌', Icon: Music },
+];
+
+const WISH_PLACEHOLDERS: Record<WishCategoryId, string> = {
+  gift: '小友，写下你想要的礼品',
+  snack: '小友，写下你想吃的零食',
+  play: '小友，你觉得JIEYOU社团可以有哪些新玩法？',
+  song: '小友，写下你想听的歌曲',
+};
+
+const MESSAGE_LIMIT = 300;
 
 export const SongRequestPage = () => {
   const navigate = useNavigate();
-  const { requests, addRequest, likeRequest, updateRequest, deleteRequest, fetchRequests } = useSongRequestStore();
+  const { addRequest, fetchRequests } = useSongRequestStore();
+  const user = useAuthStore((state) => state.user);
   const isAdmin = useAuthStore((state) => isAdminEmail(state.user?.email));
-  const [activeTab, setActiveTab] = useState<'latest' | 'hot'>('latest');
-  const [showForm, setShowForm] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [songName, setSongName] = useState('');
-  const [artist, setArtist] = useState('');
+  const [activeTab, setActiveTab] = useState<WishCategoryId>('gift');
   const [message, setMessage] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRequests();
   }, [fetchRequests]);
 
-  const resetForm = () => {
-    setEditingId(null);
-    setSongName('');
-    setArtist('');
-    setMessage('');
+  const selectedCategory = useMemo(() => {
+    return WISH_TAB_ITEMS.find((item) => item.id === activeTab) ?? WISH_TAB_ITEMS[0];
+  }, [activeTab]);
+
+  const messageCount = message.length;
+
+  const handleMessageChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setMessage(event.target.value.slice(0, MESSAGE_LIMIT));
   };
 
-  const closeForm = () => {
-    setShowForm(false);
-    resetForm();
-  };
+  const handleSendToJieyou = async () => {
+    if (!message.trim() || isSubmitting) return;
 
-  const openCreateForm = () => {
-    if (!isAdmin) return;
-    resetForm();
-    setShowForm(true);
-  };
+    setIsSubmitting(true);
+    setSyncFeedback(null);
 
-  const openEditForm = (req: SongRequest) => {
-    if (!isAdmin) return;
-    setEditingId(req.id);
-    setSongName(req.songName);
-    setArtist(req.artist || '');
-    setMessage(req.message || '');
-    setShowForm(true);
-  };
+    const trimmedMessage = message.trim();
+    await addRequest(`${selectedCategory.label}愿望`, '', trimmedMessage);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isAdmin) return;
-    if (!songName.trim()) return;
+    const syncResult = await syncWishToFeishu(
+      buildWishSyncPayload({
+        categoryId: selectedCategory.id,
+        categoryLabel: selectedCategory.label,
+        message: trimmedMessage,
+        userId: user?.uid,
+        userEmail: user?.email,
+      }),
+    );
 
-    if (editingId) {
-      updateRequest(editingId, {
-        songName,
-        artist,
-        message,
-      });
+    if (syncResult.status === 'ok') {
+      setSyncFeedback('已提交并同步到飞书汇总。');
+    } else if (syncResult.status === 'skipped') {
+      setSyncFeedback('已提交到许愿池，飞书汇总未配置。');
     } else {
-      addRequest(songName, artist, message);
+      setSyncFeedback(`已提交到许愿池，飞书汇总失败：${syncResult.error}`);
     }
 
-    closeForm();
-  };
-
-  const handleDelete = (id: string) => {
-    if (!isAdmin) return;
-    if (window.confirm('确定要将这条点歌移入回收站吗？')) {
-      deleteRequest(id);
-    }
-  };
-
-  const visibleRequests = requests.filter((request) => !request.deletedAt);
-
-  const sortedRequests = [...visibleRequests].sort((a, b) => {
-    if (activeTab === 'latest') {
-      return b.createdAt - a.createdAt;
-    }
-    return b.likes - a.likes;
-  });
-
-  const getStatusBadge = (status: SongRequest['status']) => {
-    switch (status) {
-      case 'playing':
-        return (
-          <span className="flex items-center text-xs font-bold text-pink-500 bg-pink-50 px-2 py-1 rounded-full animate-pulse">
-            <Music size={12} className="mr-1" /> 正在播放
-          </span>
-        );
-      case 'accepted':
-        return (
-          <span className="text-xs font-bold text-green-500 bg-green-50 px-2 py-1 rounded-full">
-            已安排
-          </span>
-        );
-      default:
-        return (
-          <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-1 rounded-full">
-            待处理
-          </span>
-        );
-    }
+    setMessage('');
+    setIsSubmitting(false);
   };
 
   return (
@@ -113,11 +84,11 @@ export const SongRequestPage = () => {
       <div className="relative h-48 w-full bg-gradient-to-r from-pink-400 to-purple-500 overflow-hidden rounded-b-[2rem] shadow-md">
         <div className="absolute inset-0 opacity-30 bg-[url('https://images.unsplash.com/photo-1516280440614-6697288d5d38?q=80&w=2070&auto=format&fit=crop')] bg-cover bg-center"></div>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
+        <div className="absolute inset-0 flex flex-col items-center justify-center pt-4 px-6 text-center">
           <h1 className="text-3xl font-bold text-white drop-shadow-md tracking-wide flex items-center">
-            <MessageCircleHeart className="mr-2" /> 留言点歌台
+            <MessageCircleHeart className="mr-2" /> 许愿池
           </h1>
-          <p className="text-white/80 mt-2 text-sm">写下你想听的歌，送给想念的人</p>
+          <p className="text-white/85 mt-2 text-sm">写下你的愿望，力所能及的，JIEYOU社团会尽力实现</p>
         </div>
       </div>
 
@@ -132,7 +103,7 @@ export const SongRequestPage = () => {
         <button
           onClick={() => {
             if (!isAdmin) return;
-            setShowMenu(!showMenu);
+            setShowMenu((prev) => !prev);
           }}
           className="p-2 text-white/80 hover:text-white transition-colors bg-black/10 rounded-full backdrop-blur-sm"
         >
@@ -145,21 +116,9 @@ export const SongRequestPage = () => {
               className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
               onClick={() => {
                 setShowMenu(false);
-                setIsEditing(!isEditing);
-              }}
-            >
-              <Edit2 size={18} className="mr-3 text-blue-500" />
-              <span className="text-sm font-medium">{isEditing ? '退出编辑' : '编辑模式'}</span>
-            </div>
-
-            <div
-              className="flex items-center px-4 py-3 hover:bg-gray-50 cursor-pointer text-gray-700 transition-colors"
-              onClick={() => {
-                setShowMenu(false);
                 navigate('/song-request/trash');
               }}
             >
-              <Trash2 size={18} className="mr-3 text-red-500" />
               <span className="text-sm font-medium">回收站</span>
             </div>
           </div>
@@ -168,180 +127,53 @@ export const SongRequestPage = () => {
 
       <div className="flex justify-center -mt-6 relative z-10 mb-4">
         <div className="bg-white rounded-full p-1 shadow-md flex space-x-1">
-          <button
-            onClick={() => setActiveTab('latest')}
-            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
-              activeTab === 'latest'
-                ? 'bg-gradient-to-r from-pink-400 to-purple-500 text-white shadow-sm'
-                : 'text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center"><Clock size={14} className="mr-1" /> 最新</span>
-          </button>
-          <button
-            onClick={() => setActiveTab('hot')}
-            className={`px-6 py-2 rounded-full text-sm font-bold transition-all ${
-              activeTab === 'hot'
-                ? 'bg-gradient-to-r from-pink-400 to-purple-500 text-white shadow-sm'
-                : 'text-gray-500 hover:bg-gray-50'
-            }`}
-          >
-            <span className="flex items-center"><Flame size={14} className="mr-1" /> 热门</span>
-          </button>
+          {WISH_TAB_ITEMS.map(({ id, label, Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+                activeTab === id
+                  ? 'bg-gradient-to-r from-pink-400 to-purple-500 text-white shadow-sm'
+                  : 'text-gray-500 hover:bg-gray-50'
+              }`}
+            >
+              <span className="flex items-center">
+                <Icon size={14} className="mr-1" /> {label}
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      <div className="max-w-md mx-auto px-4 space-y-4">
-        {sortedRequests.map((req) => (
-          <div
-            key={req.id}
-            onClick={() => {
-              if (!isEditing && isAdmin) openEditForm(req);
-            }}
-            className={`rounded-2xl p-4 shadow-sm border relative overflow-hidden group transition-all bg-white border-pink-100 ${
-              isEditing || !isAdmin ? 'cursor-default' : 'cursor-pointer hover:shadow-md'
-            }`}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h3 className="text-lg font-bold text-gray-800">{req.songName}</h3>
-                {req.artist && <p className="text-xs text-gray-500">{req.artist}</p>}
-              </div>
-              {getStatusBadge(req.status)}
-            </div>
-
-            {req.message && (
-              <div className="bg-pink-50 rounded-xl p-3 text-sm text-gray-600 mb-3 relative">
-                <div className="absolute -top-1 left-4 w-2 h-2 bg-pink-50 rotate-45"></div>
-                "{req.message}"
-              </div>
-            )}
-
-            <div className="flex justify-end items-center text-gray-400 text-xs gap-3">
-              {isAdmin && isEditing ? (
-                <div className="flex space-x-3">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openEditForm(req);
-                    }}
-                    className="text-blue-400 hover:text-blue-600"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDelete(req.id);
-                    }}
-                    className="text-red-400 hover:text-red-600"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-              ) : isAdmin ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    void likeRequest(req.id);
-                  }}
-                  className="flex items-center space-x-1 hover:text-pink-500 transition-colors group"
-                >
-                  <Heart size={16} className={`group-active:scale-125 transition-transform ${req.likes > 0 ? 'fill-pink-500 text-pink-500' : ''}`} />
-                  <span>{req.likes}</span>
-                </button>
-              ) : (
-                <div className="flex items-center space-x-1">
-                  <Heart size={16} className={req.likes > 0 ? 'fill-pink-500 text-pink-500' : ''} />
-                  <span>{req.likes}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-
-        {sortedRequests.length === 0 ? (
-          <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center text-sm text-gray-400">
-            暂无点歌记录
-          </div>
-        ) : null}
+      <div className="max-w-md mx-auto px-4">
+        <div className="rounded-2xl p-4 shadow-sm border bg-white border-pink-100">
+          <div className="mb-3 text-sm font-semibold text-gray-700">留言内容</div>
+          <textarea
+            rows={5}
+            maxLength={MESSAGE_LIMIT}
+            placeholder={WISH_PLACEHOLDERS[activeTab]}
+            value={message}
+            onChange={handleMessageChange}
+            className="w-full h-44 bg-pink-50 border border-pink-100 rounded-xl px-4 py-3 text-sm text-gray-700 leading-7 focus:outline-none focus:border-pink-400 focus:ring-2 focus:ring-pink-100 transition-all resize-none overflow-y-auto"
+          />
+          <div className="mt-2 text-right text-xs text-gray-400">{messageCount}/{MESSAGE_LIMIT}</div>
+          {syncFeedback ? <div className="mt-2 text-xs text-pink-500">{syncFeedback}</div> : null}
+        </div>
 
         <div className="h-36"></div>
       </div>
 
-      {isAdmin && !isEditing && (
-        <div className="fixed left-1/2 -translate-x-1/2 w-full max-w-md px-4 pt-4 pb-3 bg-gradient-to-t from-white via-white to-transparent z-40 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)]">
-          <button
-            onClick={openCreateForm}
-            className="w-full h-12 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full text-white font-bold shadow-lg shadow-pink-500/30 flex items-center justify-center hover:scale-[1.02] active:scale-95 transition-all"
-          >
-            参与点歌
-          </button>
-        </div>
-      )}
-
-      {showForm && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-4">
-          <div className="bg-white w-full max-w-md rounded-3xl p-6 shadow-2xl animate-in slide-in-from-bottom-10 fade-in duration-300">
-            <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-              <Music className="mr-2 text-pink-500" /> {editingId ? '编辑点歌' : '我要点歌'}
-            </h2>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">想听什么歌？<span className="text-red-500">*</span></label>
-                <input
-                  autoFocus
-                  type="text"
-                  required
-                  placeholder="歌名"
-                  value={songName}
-                  onChange={(e) => setSongName(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-100 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">歌手（选填）</label>
-                <input
-                  type="text"
-                  placeholder="歌手名"
-                  value={artist}
-                  onChange={(e) => setArtist(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-100 transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">想说的话（选填）</label>
-                <textarea
-                  rows={3}
-                  placeholder="写下你的心情或祝福..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:border-pink-500 focus:ring-2 focus:ring-pink-100 transition-all resize-none"
-                />
-              </div>
-
-              <div className="flex space-x-3 pt-2">
-                <button
-                  type="button"
-                  onClick={closeForm}
-                  className="flex-1 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-colors"
-                >
-                  取消
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 py-3 bg-gradient-to-r from-pink-500 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-pink-500/20 hover:shadow-pink-500/40 transition-all flex items-center justify-center"
-                >
-                  <Send size={18} className="mr-2" /> {editingId ? '保存' : '提交'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <div className="fixed left-1/2 -translate-x-1/2 w-full max-w-md px-4 pt-4 pb-3 bg-gradient-to-t from-white via-white to-transparent z-40 bottom-[calc(4rem+env(safe-area-inset-bottom)+0.5rem)]">
+        <button
+          onClick={() => {
+            void handleSendToJieyou();
+          }}
+          disabled={!message.trim() || isSubmitting}
+          className="w-full h-12 bg-gradient-to-r from-pink-500 to-purple-600 rounded-full text-white font-bold shadow-lg shadow-pink-500/30 flex items-center justify-center hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+        >
+          <Send size={18} className="mr-2" /> {isSubmitting ? '发送中...' : '发给JIEYOU'}
+        </button>
+      </div>
     </div>
   );
 };

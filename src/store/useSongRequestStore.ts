@@ -113,10 +113,6 @@ export const useSongRequestStore = create<SongRequestState>((set, get) => ({
   },
 
   addRequest: async (songName, artist, message) => {
-    if (!isCurrentUserAdmin()) {
-      set({ error: EDIT_PERMISSION_DENIED_MESSAGE });
-      return;
-    }
     try {
       await ensureAuth();
       const newRequest = {

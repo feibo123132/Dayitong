@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { db, ensureAuth } from '../lib/cloudbase';
 import { EDIT_PERMISSION_DENIED_MESSAGE, isCurrentUserAdmin } from '../lib/permissions';
+import { rankUsersByScore } from '../lib/ranking';
 
 export interface HistoryRecord {
   id: string;
@@ -14,6 +15,7 @@ export interface HistoryRecord {
 export interface User {
   id: string; // Mapped from _id
   name: string;
+  code?: string;
   score: number;
   rank: number;
   history: HistoryRecord[];
@@ -98,19 +100,8 @@ export const useRankingStore = create<RankingState>((set, get) => ({
         users = newRes.data.map(mapRankingUserDoc);
       }
 
-      // Keep manual ranking order first; fall back to score when rank is invalid.
-      users.sort((a, b) => {
-        const rankA = Number.isFinite(a.rank) && a.rank > 0 ? a.rank : Number.MAX_SAFE_INTEGER;
-        const rankB = Number.isFinite(b.rank) && b.rank > 0 ? b.rank : Number.MAX_SAFE_INTEGER;
-        if (rankA !== rankB) return rankA - rankB;
-        if (b.score !== a.score) return b.score - a.score;
-        return a.name.localeCompare(b.name);
-      });
-
-      const rankedUsers = users.map((user, index) => ({
-        ...user,
-        rank: index + 1
-      }));
+      // Auto-rank by score; keep existing rank only as a tie-breaker for equal scores.
+      const rankedUsers = rankUsersByScore(users);
       
       set({ users: rankedUsers, isLoading: false });
     } catch (error: unknown) {

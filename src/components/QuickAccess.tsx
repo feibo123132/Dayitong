@@ -1,11 +1,11 @@
-﻿import { BookOpen, LayoutGrid, MessageCircleHeart, Guitar } from 'lucide-react';
+import { BookOpen, LayoutGrid, MessageCircleHeart, Guitar } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const QUICK_ACCESS = [
   { id: '6', name: '吉他免费入门', icon: BookOpen, color: 'text-emerald-600', bg: 'bg-emerald-50', path: '/guitar-beginner' },
   { id: '1', name: '路演', icon: Guitar, color: 'text-orange-500', bg: 'bg-orange-50', path: '/roadshow' },
   { id: '4', name: 'APP 铺子', icon: LayoutGrid, color: 'text-pink-500', bg: 'bg-pink-50', path: '/app-store' },
-  { id: '5', name: '留言点歌', icon: MessageCircleHeart, color: 'text-white', bg: 'bg-gradient-to-r from-pink-400 to-purple-500', path: '/song-request' },
+  { id: '5', name: '许愿池', icon: MessageCircleHeart, color: 'text-white', bg: 'bg-gradient-to-r from-pink-400 to-purple-500', path: '/song-request' },
 ];
 
 export const QuickAccess = () => {
@@ -28,3 +28,4 @@ export const QuickAccess = () => {
     </div>
   );
 };
+
