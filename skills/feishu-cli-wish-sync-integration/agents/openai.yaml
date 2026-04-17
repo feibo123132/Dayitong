@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feishu CLI Wish Sync (Legacy)"
+  short_description: "Compatibility alias for older wish-sync integrations."
+  default_prompt: "Use this legacy alias for existing wish-sync projects, and prefer feishu-cli-structured-sync for new reusable integrations."

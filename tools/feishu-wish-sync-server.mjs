@@ -1,21 +1,45 @@
-import { createServer } from 'node:http';
+﻿import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const PORT = Number.parseInt(process.env.PORT ?? '8787', 10);
-const CLI_BIN = process.env.LARK_CLI_BIN ?? 'lark-cli';
+const DEFAULT_CLI_BIN = 'lark-cli';
+const CLI_BIN = process.env.LARK_CLI_BIN ?? DEFAULT_CLI_BIN;
+const IS_WINDOWS = process.platform === 'win32';
 const SYNC_TOKEN = process.env.JIEYOU_SYNC_TOKEN?.trim() ?? '';
 const BASE_TOKEN = process.env.FEISHU_BASE_TOKEN?.trim() ?? '';
 const BASE_TABLE_ID = process.env.FEISHU_BASE_TABLE_ID?.trim() ?? '';
 const NOTIFY_CHAT_ID = process.env.FEISHU_NOTIFY_CHAT_ID?.trim() ?? '';
+
+const CATEGORY_OPTION_MAP = {
+  礼品: '🎁礼品',
+  零食: '🍿零食',
+  玩法: '💡Idea',
+  点歌: '🎶点歌',
+};
 
 const fail = (res, statusCode, message) => {
   res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ ok: false, error: message }));
 };
 
+const setCorsHeaders = (req, res) => {
+  const origin = typeof req.headers.origin === 'string' ? req.headers.origin : '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Vary', 'Origin');
+  res.setHeader('Access-Control-Allow-Headers', 'content-type, x-jieyou-sync-token');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+};
+
 const runCli = (args) =>
   new Promise((resolve, reject) => {
-    const child = spawn(CLI_BIN, args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    const child = spawn(CLI_BIN, args, {
+      stdio: ['ignore', 'pipe', 'pipe'],
+      windowsHide: true,
+      shell: IS_WINDOWS,
+    });
+
     let stdout = '';
     let stderr = '';
 
@@ -63,7 +87,12 @@ const normalizeWishPayload = (raw) => {
   const category = typeof payload.category === 'object' && payload.category !== null ? payload.category : {};
   const user = typeof payload.user === 'object' && payload.user !== null ? payload.user : {};
 
-  const categoryLabel = typeof category.label === 'string' ? category.label : '未知分类';
+  const categoryLabel =
+    typeof payload.category === 'string'
+      ? payload.category.trim()
+      : typeof category.label === 'string'
+        ? category.label.trim()
+        : '';
   const message = typeof payload.message === 'string' ? payload.message.trim() : '';
   const submittedAt = Number.isFinite(payload.submittedAt) ? Number(payload.submittedAt) : Date.now();
   const userUid = typeof user.uid === 'string' ? user.uid : '';
@@ -78,37 +107,66 @@ const normalizeWishPayload = (raw) => {
   };
 };
 
-const formatDateTime = (timestamp) => new Date(timestamp).toISOString();
+const resolveCategoryOption = (categoryLabel) => {
+  if (!categoryLabel) return null;
+  if (Object.values(CATEGORY_OPTION_MAP).includes(categoryLabel)) {
+    return categoryLabel;
+  }
+  return CATEGORY_OPTION_MAP[categoryLabel] ?? null;
+};
+
+const createRelativeJsonPayload = (fields) => {
+  const payloadDir = '.codex-temp';
+  mkdirSync(payloadDir, { recursive: true });
+  const fileName = `wish-fields-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.json`;
+  const relativePath = join(payloadDir, fileName).replace(/\\/g, '/');
+  writeFileSync(relativePath, JSON.stringify(fields), 'utf8');
+  return relativePath;
+};
 
 const upsertWishRecord = async ({ categoryLabel, message, submittedAt, userUid, userEmail }) => {
   if (!BASE_TOKEN || !BASE_TABLE_ID) {
     throw new Error('FEISHU_BASE_TOKEN / FEISHU_BASE_TABLE_ID not configured');
   }
 
+  const categoryOption = resolveCategoryOption(categoryLabel);
+  const remarkParts = [];
+  if (userUid) remarkParts.push(`uid=${userUid}`);
+  if (userEmail) remarkParts.push(`email=${userEmail}`);
+
   const fields = {
-    分类: categoryLabel,
+    许愿人: userEmail || userUid || '匿名用户',
+    许愿时间: submittedAt,
     愿望内容: message,
-    提交时间: formatDateTime(submittedAt),
-    提交用户UID: userUid,
-    提交用户邮箱: userEmail,
+    备注: remarkParts.join('; ') || '来自愿望池提交',
   };
 
-  await runCli([
-    'base',
-    '+record-upsert',
-    '--base-token',
-    BASE_TOKEN,
-    '--table-id',
-    BASE_TABLE_ID,
-    '--fields',
-    JSON.stringify(fields),
-  ]);
+  if (categoryOption) {
+    fields['愿望类别'] = categoryOption;
+  }
+
+  const payloadRelativePath = createRelativeJsonPayload(fields);
+
+  try {
+    await runCli([
+      'base',
+      '+record-upsert',
+      '--base-token',
+      BASE_TOKEN,
+      '--table-id',
+      BASE_TABLE_ID,
+      '--json',
+      `@${payloadRelativePath}`,
+    ]);
+  } finally {
+    rmSync(payloadRelativePath, { force: true });
+  }
 };
 
 const maybeNotify = async ({ categoryLabel, message, userEmail }) => {
   if (!NOTIFY_CHAT_ID) return;
 
-  const text = `愿望池新提交\n分类：${categoryLabel}\n内容：${message}\n用户：${userEmail || '匿名用户'}`;
+  const text = `愿望池新提交\n分类：${categoryLabel || '未分类'}\n内容：${message}\n用户：${userEmail || '匿名用户'}`;
   await runCli([
     'im',
     '+messages-send',
@@ -122,6 +180,14 @@ const maybeNotify = async ({ categoryLabel, message, userEmail }) => {
 };
 
 const server = createServer(async (req, res) => {
+  setCorsHeaders(req, res);
+
+  if (req.method === 'OPTIONS' && req.url === '/wish/submit') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true }));

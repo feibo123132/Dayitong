@@ -40,6 +40,8 @@ interface SyncWishToFeishuOptions {
 }
 
 const DEFAULT_TIMEOUT_MS = 8000;
+const LOCAL_FALLBACK_ENDPOINT = 'http://127.0.0.1:8787/wish/submit';
+const LOCAL_FALLBACK_TOKEN = 'jieyouyuzhou';
 
 const getDefaultEnv = (): Partial<WishSyncEnv> => {
   const meta = import.meta as ImportMeta & { env?: Partial<WishSyncEnv> };
@@ -53,7 +55,17 @@ const normalizeOptionalText = (value: string | undefined): string | null => {
 };
 
 export const getWishSyncEndpoint = (env: Partial<WishSyncEnv> = getDefaultEnv()): string | null => {
-  return normalizeOptionalText(env.VITE_JIEYOU_WISH_SYNC_ENDPOINT);
+  const endpoint = normalizeOptionalText(env.VITE_JIEYOU_WISH_SYNC_ENDPOINT);
+  if (endpoint) return endpoint;
+
+  if (typeof window !== 'undefined') {
+    const host = window.location.hostname;
+    if (host === 'localhost' || host === '127.0.0.1') {
+      return LOCAL_FALLBACK_ENDPOINT;
+    }
+  }
+
+  return null;
 };
 
 export const buildWishSyncPayload = (input: WishSyncPayloadInput): WishSyncPayload => ({
@@ -80,7 +92,9 @@ export const syncWishToFeishu = async (
     return { status: 'skipped', reason: 'endpoint_not_configured' };
   }
 
-  const token = normalizeOptionalText(env.VITE_JIEYOU_WISH_SYNC_TOKEN);
+  const token =
+    normalizeOptionalText(env.VITE_JIEYOU_WISH_SYNC_TOKEN) ??
+    (endpoint === LOCAL_FALLBACK_ENDPOINT ? LOCAL_FALLBACK_TOKEN : null);
   const fetchImpl = options.fetchImpl ?? fetch;
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const controller = new AbortController();

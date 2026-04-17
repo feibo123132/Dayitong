@@ -1,0 +1,4 @@
+interface:
+  display_name: "Feishu CLI Structured Sync"
+  short_description: "Reusable gateway workflow for syncing structured data to Feishu Base."
+  default_prompt: "Use this skill to design, implement, and verify a reusable sync path from any app to Feishu Base via local gateway and lark-cli."
