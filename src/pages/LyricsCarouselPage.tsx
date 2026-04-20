@@ -193,6 +193,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [audioDuration, setAudioDuration] = useState<number | null>(null);
+  const [playbackError, setPlaybackError] = useState('');
   const [liked, setLiked] = useState(true);
   const [uploadedLyrics, setUploadedLyrics] = useState<SongLyricLine[] | null>(() => loadUploadedLyricsFromStorage(songId));
   const [uploadHint, setUploadHint] = useState(() => {
@@ -201,7 +202,10 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
   });
 
   const lyrics = useMemo(() => uploadedLyrics ?? detail?.lyrics ?? [], [detail?.lyrics, uploadedLyrics]);
-  const duration = audioDuration ?? detail?.durationSeconds ?? fallbackDuration;
+  const duration = song?.audioUrl
+    ? audioDuration ?? detail?.durationSeconds ?? fallbackDuration
+    : detail?.durationSeconds ?? fallbackDuration;
+  const visiblePlaybackError = !song?.audioUrl ? 'No audio file configured for this song.' : playbackError;
 
   const lyricist = detail?.credits.find((item) => item.label === '作词')?.value;
   const composer = detail?.credits.find((item) => item.label === '作曲')?.value;
@@ -237,6 +241,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
       if (Number.isFinite(audio.duration) && audio.duration > 0) {
         setAudioDuration(audio.duration);
       }
+      setPlaybackError('');
     };
 
     const handleTimeUpdate = () => {
@@ -248,9 +253,14 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
       setCurrentTime(0);
     };
 
+    const handleAudioError = () => {
+      setPlaybackError('Failed to load audio file. Please verify the file path.');
+    };
+
     audio.addEventListener('loadedmetadata', handleLoadedMetadata);
     audio.addEventListener('timeupdate', handleTimeUpdate);
     audio.addEventListener('ended', handleEnded);
+    audio.addEventListener('error', handleAudioError);
     audioRef.current = audio;
 
     return () => {
@@ -258,6 +268,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
       audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       audio.removeEventListener('timeupdate', handleTimeUpdate);
       audio.removeEventListener('ended', handleEnded);
+      audio.removeEventListener('error', handleAudioError);
       if (audioRef.current === audio) {
         audioRef.current = null;
       }
@@ -335,12 +346,23 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
       try {
         await audioRef.current.play();
         setIsPlaying(true);
-      } catch {
+        setPlaybackError('');
+      } catch (error) {
+        const mediaError = audioRef.current.error;
+        console.error('Audio playback failed:', {
+          error,
+          audioUrl: song?.audioUrl,
+          resolvedSrc: audioRef.current.currentSrc || audioRef.current.src,
+          mediaErrorCode: mediaError?.code,
+          mediaErrorMessage: mediaError?.message,
+        });
         setIsPlaying(false);
+        setPlaybackError('Audio playback failed. The source may be invalid or unreachable.');
       }
       return;
     }
 
+    setPlaybackError('Audio is not ready. Please check if the file can be loaded.');
     setIsPlaying((prev) => !prev);
   };
 
@@ -537,6 +559,7 @@ const LyricsCarouselScreen = ({ songId }: LyricsCarouselScreenProps) => {
             <span>{formatTime(currentTime)}</span>
             <span>{formatTime(duration)}</span>
           </div>
+          {visiblePlaybackError ? <p className="mt-1 text-[11px] text-[#ffb3b3]">{visiblePlaybackError}</p> : null}
         </section>
 
         <section className="relative z-10 mt-2 flex items-center justify-between px-0.5 text-white/82">

@@ -51,126 +51,25 @@ type OriginalMusicBoxDoc = {
   updatedAt: number;
 };
 
+const MOON_SONG_ID = 'song-5';
+const MOON_SONG_TITLE = '你终将会找到属于自己的月亮';
+const LEGACY_PLACEHOLDER_IDS = new Set(['song-1', 'song-2', 'song-3', 'song-4']);
+const LEGACY_PLACEHOLDER_TITLES = new Set(['山花烂漫时', '海边的答案', '雨停之后', '银河慢跑', '晚风写信']);
+
 export const DEFAULT_SONGS: SongItem[] = [
   {
-    id: 'song-1',
-    title: '晚风写信',
-    duration: '03:42',
-    intro: '给深夜留一盏温柔小灯，和你慢慢把心事说完。',
-    styles: ['治愈民谣'],
-    coverClassName: 'from-emerald-400 to-teal-500',
-  },
-  {
-    id: 'song-2',
-    title: '海边的答案',
-    duration: '04:06',
-    intro: '当潮声退去，答案会在脚印之间悄悄出现。',
-    styles: ['清新流行'],
-    coverClassName: 'from-cyan-400 to-sky-500',
-  },
-  {
-    id: 'song-3',
-    title: '银河慢跑',
-    duration: '03:18',
-    intro: '把焦虑折成纸飞机，交给今晚的星空保管。',
-    styles: ['电子独立'],
-    coverClassName: 'from-violet-400 to-indigo-500',
-  },
-  {
-    id: 'song-4',
-    title: '雨停之后',
-    duration: '04:23',
-    intro: '雨停后的街道有新的呼吸，也有新的勇气。',
-    styles: ['城市抒情'],
-    coverClassName: 'from-slate-400 to-blue-500',
-  },
-  {
-    id: 'song-5',
-    title: '你终将会找到属于自己的月亮',
-    duration: '05:07',
+    id: MOON_SONG_ID,
+    title: MOON_SONG_TITLE,
+    duration: '03:22',
     intro: '愿每一次出发，都能带着轻快与明亮回来。',
-    styles: ['暖调群像'],
+    styles: ['社团之歌', 'Dream pop'],
     coverClassName: 'from-orange-400 to-rose-500',
     audioUrl: `${import.meta.env.BASE_URL}audio/moon.wav`,
   },
 ];
 
 const SONG_DETAILS: Record<string, SongDetail> = {
-  'song-1': {
-    badge: '深夜特调',
-    artist: 'JIEYOU Session',
-    highlightLabel: '民谣来信',
-    credits: [
-      { label: '作词', value: '川页' },
-      { label: '作曲', value: '林峤' },
-      { label: '编曲', value: '张原野' },
-      { label: '制作', value: 'JIEYOU FM' },
-    ],
-    lyrics: [
-      { time: 0, text: '把今天没说出口的话' },
-      { time: 13, text: '折成一封晚风色的信' },
-      { time: 28, text: '路灯陪着影子走得很慢' },
-      { time: 43, text: '你也终于肯停下来听听自己' },
-      { time: 58, text: '愿每个夜归的人都有地方落笔' },
-      { time: 73, text: '把心事写完 就把疲惫轻轻放低' },
-    ],
-    durationSeconds: 222,
-  },
-  'song-2': {
-    badge: '海风电台',
-    artist: 'Blue Shore',
-    highlightLabel: '流行海岸',
-    credits: [
-      { label: '作词', value: '阿澄' },
-      { label: '作曲', value: '李浪' },
-      { label: '编曲', value: '群青' },
-      { label: '混音', value: '夏泉' },
-    ],
-    lyrics: [
-      { time: 0, text: '海边的答案总是来得很轻' },
-      { time: 16, text: '像浪花把犹豫一点点抹平' },
-      { time: 34, text: '你看天色从灰蓝慢慢转亮' },
-      { time: 51, text: '脚印也学会向前 不再回望' },
-    ],
-    durationSeconds: 246,
-  },
-  'song-3': {
-    badge: '夜航模式',
-    artist: 'Nebula Run',
-    highlightLabel: '电子独立',
-    credits: [
-      { label: '作词', value: '九旻' },
-      { label: '作曲', value: 'K' },
-      { label: '音色设计', value: 'Float' },
-      { label: '制作', value: 'JIEYOU Lab' },
-    ],
-    lyrics: [
-      { time: 0, text: '把焦虑折成纸飞机' },
-      { time: 14, text: '沿着星轨慢跑一个来回' },
-      { time: 31, text: '世界把噪音关到门外' },
-      { time: 47, text: '今晚只留下你的呼吸和月辉' },
-    ],
-    durationSeconds: 198,
-  },
-  'song-4': {
-    badge: '雨后频道',
-    artist: 'After Rain',
-    highlightLabel: '城市抒情',
-    credits: [
-      { label: '作词', value: '简野' },
-      { label: '作曲', value: '温平' },
-      { label: '编曲', value: '张迟' },
-      { label: '制作', value: 'JIEYOU Studio' },
-    ],
-    lyrics: [
-      { time: 0, text: '雨停之后 街道开始重新发光' },
-      { time: 18, text: '鞋底踩过积水 像踩过旧日迷茫' },
-      { time: 36, text: '有人把乌云收进背包' },
-      { time: 53, text: '也有人学会给明天让出一扇窗' },
-    ],
-    durationSeconds: 263,
-  },
-  'song-5': {
+  [MOON_SONG_ID]: {
     badge: '解忧专供',
     artist: '广医小帅、小美',
     highlightLabel: '暖心旋律',
@@ -209,8 +108,36 @@ const SONG_DETAILS: Record<string, SongDetail> = {
       { time: 161.93, text: '生命真奇妙 相遇的人模糊在记忆一角' },
       { time: 166.06, text: '朝着你的月亮走 最终也能遇到某某' },
     ],
-    durationSeconds: 307,
+    durationSeconds: 202,
   },
+};
+
+const normalizeAudioUrl = (rawAudioUrl: string | undefined, fallbackAudioUrl: string | undefined): string | undefined => {
+  const sourceAudioUrl = typeof rawAudioUrl === 'string' ? rawAudioUrl.trim() : '';
+  if (!sourceAudioUrl) {
+    return fallbackAudioUrl;
+  }
+
+  const normalized = sourceAudioUrl.replace(/\\/g, '/');
+  const hasWindowsPathPrefix = /^[a-zA-Z]:\//.test(normalized);
+  const isFileProtocol = normalized.startsWith('file://');
+
+  if (hasWindowsPathPrefix || isFileProtocol) {
+    return fallbackAudioUrl;
+  }
+
+  const withoutDotPrefix = normalized.replace(/^\.\/+/, '');
+  if (withoutDotPrefix.toLowerCase().startsWith('audio/')) {
+    return `${import.meta.env.BASE_URL}${withoutDotPrefix}`;
+  }
+
+  const audioSegmentIndex = normalized.toLowerCase().indexOf('/audio/');
+  if (audioSegmentIndex >= 0) {
+    const audioSegment = normalized.slice(audioSegmentIndex + 1);
+    return `${import.meta.env.BASE_URL}${audioSegment}`;
+  }
+
+  return normalized;
 };
 
 const normalizeSongs = (source: unknown): SongItem[] => {
@@ -234,6 +161,7 @@ const normalizeSongs = (source: unknown): SongItem[] => {
         typeof songSource.coverClassName === 'string' && songSource.coverClassName.trim()
           ? songSource.coverClassName
           : fallback.coverClassName;
+      const sanitizedAudioUrl = normalizeAudioUrl(songSource.audioUrl, fallback.audioUrl);
 
       const styles = Array.isArray(songSource.styles)
         ? songSource.styles.filter((style): style is string => typeof style === 'string')
@@ -247,7 +175,7 @@ const normalizeSongs = (source: unknown): SongItem[] => {
         styles,
         coverClassName,
         deletedAt: typeof songSource.deletedAt === 'number' ? songSource.deletedAt : undefined,
-        audioUrl: typeof songSource.audioUrl === 'string' ? songSource.audioUrl : fallback.audioUrl,
+        audioUrl: sanitizedAudioUrl,
       } as SongItem;
     })
     .filter((song): song is SongItem => song !== null);
@@ -255,6 +183,23 @@ const normalizeSongs = (source: unknown): SongItem[] => {
   return normalized.length > 0 ? normalized : DEFAULT_SONGS;
 };
 
+const isLegacyPlaceholderSong = (song: SongItem): boolean => {
+  return LEGACY_PLACEHOLDER_IDS.has(song.id) || LEGACY_PLACEHOLDER_TITLES.has(song.title);
+};
+
+const isMoonSong = (song: SongItem): boolean => {
+  return song.id === MOON_SONG_ID || song.title === MOON_SONG_TITLE;
+};
+
+const pruneLegacyPlaceholderSongs = (songs: SongItem[]): SongItem[] => {
+  const hasMoonSong = songs.some((song) => isMoonSong(song));
+  if (!hasMoonSong) {
+    return songs;
+  }
+
+  const filtered = songs.filter((song) => isMoonSong(song) || !isLegacyPlaceholderSong(song));
+  return filtered.length > 0 ? filtered : songs;
+};
 const persistSongsToLocalStorage = (songs: SongItem[]): void => {
   if (typeof window === 'undefined') {
     return;
@@ -290,7 +235,7 @@ export const loadSongsFromStorage = (): SongItem[] => {
     if (!raw) {
       return DEFAULT_SONGS;
     }
-    return normalizeSongs(JSON.parse(raw));
+    return pruneLegacyPlaceholderSongs(normalizeSongs(JSON.parse(raw)));
   } catch {
     return DEFAULT_SONGS;
   }
@@ -304,7 +249,7 @@ export const loadSongsForOwner = async (owner: MusicBoxOwner): Promise<SongItem[
 
   const primaryOwnerKey = ownerKeys[0];
   const secondaryOwnerKey = ownerKeys[1];
-  const localSongs = loadSongsFromStorage();
+  const localSongs = pruneLegacyPlaceholderSongs(loadSongsFromStorage());
   const fallbackSongs = localSongs.length > 0 ? localSongs : DEFAULT_SONGS;
 
   try {
@@ -325,8 +270,24 @@ export const loadSongsForOwner = async (owner: MusicBoxOwner): Promise<SongItem[
 
     if (cloudDocs.length > 0) {
       const latestDoc = cloudDocs[0];
-      const cloudSongs = normalizeSongs(latestDoc.songs);
+      const originalCloudSongs = normalizeSongs(latestDoc.songs);
+      const cloudSongs = pruneLegacyPlaceholderSongs(originalCloudSongs);
       persistSongsToLocalStorage(cloudSongs);
+
+      // Keep cloud data in sync when legacy placeholder songs were pruned.
+      const hasPrunedChanges = JSON.stringify(cloudSongs) !== JSON.stringify(originalCloudSongs);
+      if (hasPrunedChanges && latestDoc?._id) {
+        try {
+          await collection.doc(latestDoc._id).update({
+            songs: cloudSongs,
+            ownerUid: owner?.uid ?? '',
+            ownerEmail: normalizeEmail(owner?.email),
+            updatedAt: Date.now(),
+          });
+        } catch {
+          // Ignore sync failures; cleaned songs are still used locally.
+        }
+      }
 
       // Best-effort migration to a single stable owner key.
       if (latestDoc.ownerKey !== primaryOwnerKey) {
@@ -365,8 +326,9 @@ export const loadSongsForOwner = async (owner: MusicBoxOwner): Promise<SongItem[
 };
 
 export const saveSongsForOwner = async (owner: MusicBoxOwner, songs: SongItem[]): Promise<void> => {
+  const normalizedSongs = pruneLegacyPlaceholderSongs(songs);
   const ownerKeys = getOwnerKeys(owner);
-  persistSongsToLocalStorage(songs);
+  persistSongsToLocalStorage(normalizedSongs);
 
   if (ownerKeys.length === 0) {
     return;
@@ -382,7 +344,7 @@ export const saveSongsForOwner = async (owner: MusicBoxOwner, songs: SongItem[])
 
     if (result.data.length > 0) {
       await collection.doc(result.data[0]._id).update({
-        songs,
+        songs: normalizedSongs,
         ownerUid: owner?.uid ?? '',
         ownerEmail: normalizeEmail(owner?.email),
         updatedAt: now,
@@ -394,7 +356,7 @@ export const saveSongsForOwner = async (owner: MusicBoxOwner, songs: SongItem[])
       ownerKey: primaryOwnerKey,
       ownerUid: owner?.uid ?? '',
       ownerEmail: normalizeEmail(owner?.email),
-      songs,
+      songs: normalizedSongs,
       createdAt: now,
       updatedAt: now,
     });
@@ -421,3 +383,7 @@ export const getSongDetail = (song: SongItem): SongDetail => {
     }
   );
 };
+
+
+
+

@@ -1,4 +1,4 @@
-﻿﻿﻿﻿import { ArrowDown, ArrowLeft, ArrowUp, Check, Edit2, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowLeft, ArrowUp, Check, Edit2, Plus, Search, Trash2 } from 'lucide-react';
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getGuessMusicRankSections, getGuessMusicTableMetrics, type GuessMusicRankSectionKey } from '../lib/guessMusicRanking';
@@ -23,7 +23,7 @@ const toDraft = (user: { name: string; count: number; participationCount: number
 export const GuessMusicPage = () => {
   const navigate = useNavigate();
   const locationKey: GuessLocationKey = 'gx-egg';
-  const locationTitle = '医大猜歌榜';
+  const locationTitle = '医大猜歌达人榜';
   const bannerImageUrl = `${import.meta.env.BASE_URL}images/roadshow/location-select-banner.png`;
 
   const { users, addUser, updateUser, deleteUser, setActiveLocation, isLoading, error } = useGuessMusicStore();
@@ -224,7 +224,7 @@ export const GuessMusicPage = () => {
   return (
     <div className="min-h-screen bg-teal-50/50">
       <div className="relative h-48 w-full overflow-hidden rounded-b-[2rem] shadow-md">
-        <img src={bannerImageUrl} alt="医大猜歌榜横幅" className="absolute inset-0 h-full w-full object-cover" />
+        <img src={bannerImageUrl} alt="医大猜歌达人榜横幅" className="absolute inset-0 h-full w-full object-cover" />
 
         <div className="absolute inset-0 flex flex-col items-center justify-center pt-4">
           <h1 className="text-3xl font-bold tracking-wide text-white drop-shadow-md">{locationTitle}</h1>
