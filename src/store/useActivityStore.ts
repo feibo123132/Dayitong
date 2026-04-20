@@ -28,6 +28,7 @@ interface ActivityState extends ActivityProgressFields {
 }
 
 const ACTIVITY_PROGRESS_COLLECTION = 'Dayitong_activity_progress';
+const ACTIVITY_PROGRESS_STORAGE_PREFIX = 'jieyou_activity_progress_v1_';
 
 const DEFAULT_PROGRESS: ActivityProgressFields = {
   completedTaskIds: [],
@@ -60,6 +61,36 @@ const sanitizeTaskIds = (value: unknown): ActivityTaskId[] => {
 };
 
 const getCollection = () => db.collection(ACTIVITY_PROGRESS_COLLECTION);
+
+const getLocalStorageKey = (uid: string, activityId: string): string => {
+  const safeUid = uid.trim().toLowerCase() || 'guest';
+  const safeActivityId = activityId.trim() || 'unknown';
+  return `${ACTIVITY_PROGRESS_STORAGE_PREFIX}${safeUid}_${safeActivityId}`;
+};
+
+const readProgressFromLocalStorage = (uid: string, activityId: string): ActivityProgressFields | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.localStorage.getItem(getLocalStorageKey(uid, activityId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<ActivityProgressFields>;
+    return {
+      completedTaskIds: sanitizeTaskIds(parsed.completedTaskIds),
+      score: typeof parsed.score === 'number' ? parsed.score : 0,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const writeProgressToLocalStorage = (uid: string, activityId: string, progress: ActivityProgressFields): void => {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(getLocalStorageKey(uid, activityId), JSON.stringify(progress));
+  } catch {
+    // Ignore local storage failures.
+  }
+};
 
 const upsertProgress = async (uid: string, activityId: string, progress: ActivityProgressFields): Promise<void> => {
   await ensureAuth();
@@ -94,7 +125,14 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
   error: null,
 
   loadProgress: async (uid, activityId) => {
-    set({ currentUid: uid, currentActivityId: activityId, isLoading: true, error: null });
+    const localProgress = readProgressFromLocalStorage(uid, activityId);
+    set({
+      ...(localProgress ?? DEFAULT_PROGRESS),
+      currentUid: uid,
+      currentActivityId: activityId,
+      isLoading: true,
+      error: null,
+    });
 
     try {
       await ensureAuth();
@@ -103,23 +141,30 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
       const data = normalizeDbData<ActivityProgressDoc>(res);
 
       if (data.length === 0) {
+        const fallbackProgress = localProgress ?? DEFAULT_PROGRESS;
         if (isCurrentUserAdmin()) {
-          await upsertProgress(uid, activityId, DEFAULT_PROGRESS);
+          await upsertProgress(uid, activityId, fallbackProgress);
         }
-        set({ ...DEFAULT_PROGRESS, isLoading: false });
+        writeProgressToLocalStorage(uid, activityId, fallbackProgress);
+        set({ ...fallbackProgress, isLoading: false });
         return;
       }
 
       const doc = data[0];
-      set({
+      const nextProgress = {
         completedTaskIds: sanitizeTaskIds(doc.completedTaskIds),
         score: typeof doc.score === 'number' ? doc.score : 0,
+      };
+      writeProgressToLocalStorage(uid, activityId, nextProgress);
+      set({
+        ...nextProgress,
         isLoading: false,
       });
     } catch (error: unknown) {
       set({
         isLoading: false,
         error: getErrorMessage(error, '加载活动进度失败'),
+        ...(localProgress ?? {}),
       });
     }
   },
@@ -141,6 +186,9 @@ export const useActivityStore = create<ActivityState>((set, get) => ({
 
     const uid = get().currentUid;
     const activityId = get().currentActivityId;
+    if (uid && activityId) {
+      writeProgressToLocalStorage(uid, activityId, nextProgress);
+    }
     if (!uid || !activityId) return;
 
     try {

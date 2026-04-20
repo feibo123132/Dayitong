@@ -83,7 +83,7 @@ export const CurrentActivity = () => {
           <div className={`h-full w-0 ${festival.theme.progressBarClass}`}></div>
         </div>
 
-        <p className="text-[10px] text-slate-500 mb-2">点击小卡片查看任务面板和活动奖励</p>
+              <p className="text-[10px] text-slate-500 mb-2">点击小卡片查看任务面板和节日祝福</p>
 
         <div className="flex flex-wrap gap-1.5">
           {festival.tasks.map((task) => (

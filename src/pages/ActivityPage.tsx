@@ -15,7 +15,7 @@ import {
 export const ActivityPage = () => {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const { completedTaskIds, loadProgress, resetProgress, isLoading, error } = useActivityStore();
+  const { completedTaskIds, loadProgress, isLoading, error } = useActivityStore();
   const [now, setNow] = useState(() => Date.now());
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [expandedMenuGroupIds, setExpandedMenuGroupIds] = useState<string[]>([]);
@@ -33,7 +33,7 @@ export const ActivityPage = () => {
     })).filter((group) => group.festivals.length > 0);
   }, [festivalMap]);
 
-  const userUid = user?.uid ?? null;
+  const progressOwnerKey = user?.uid ?? user?.email?.trim().toLowerCase() ?? 'guest';
   const festival = FESTIVAL_TEMPLATES.find((item) => item.id === selectedFestivalId) ?? FESTIVAL_TEMPLATES[0];
   const festivalCulture = FESTIVAL_CULTURES[festival.id] ?? FESTIVAL_CULTURES['lantern-festival-2026'];
 
@@ -56,12 +56,8 @@ export const ActivityPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!userUid) {
-      resetProgress();
-      return;
-    }
-    void loadProgress(userUid, festival.id);
-  }, [festival.id, loadProgress, resetProgress, userUid]);
+    void loadProgress(progressOwnerKey, festival.id);
+  }, [festival.id, loadProgress, progressOwnerKey]);
 
   const status = getActivityStatus(now, festival.startAt, festival.endAt);
   const doneCount = completedTaskIds.length;
@@ -237,7 +233,7 @@ export const ActivityPage = () => {
               <div className={`h-full rounded-full transition-all ${festival.theme.progressBarClass}`} style={{ width: `${progressPercent}%` }} />
             </div>
 
-            <p className={`mt-3 text-xs font-semibold ${heroMetaClass}`}>点击小卡片查看任务面板和活动奖励</p>
+              <p className={`mt-3 text-xs font-semibold ${heroMetaClass}`}>点击小卡片查看任务面板和节日祝福</p>
           </div>
         </button>
       </section>

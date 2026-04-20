@@ -1,10 +1,56 @@
-import { ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock3, Gift, MapPin, Sparkles } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { ArrowLeft, Calendar, ChevronDown, ChevronUp, Clock3, MapPin, PlayCircle, Sparkles, Upload, Video } from 'lucide-react';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAuthStore } from '../store/useAuthStore';
 import { useActivityStore } from '../store/useActivityStore';
 import { FESTIVAL_TEMPLATES, formatCountdown, getActivityStatus, type ActivityTask } from './activityData';
 import { isAdminEmail } from '../lib/permissions';
+
+const BLESSING_VIDEO_DB_NAME = 'jieyou_festival_media_db';
+const BLESSING_VIDEO_STORE_NAME = 'festival_blessing_videos';
+
+const openBlessingVideoDb = (): Promise<IDBDatabase> =>
+  new Promise((resolve, reject) => {
+    if (typeof window === 'undefined' || !window.indexedDB) {
+      reject(new Error('IndexedDB is not supported in this browser.'));
+      return;
+    }
+    const request = window.indexedDB.open(BLESSING_VIDEO_DB_NAME, 1);
+    request.onupgradeneeded = () => {
+      const db = request.result;
+      if (!db.objectStoreNames.contains(BLESSING_VIDEO_STORE_NAME)) {
+        db.createObjectStore(BLESSING_VIDEO_STORE_NAME);
+      }
+    };
+    request.onsuccess = () => resolve(request.result);
+    request.onerror = () => reject(request.error ?? new Error('Failed to open local media database.'));
+  });
+
+const saveBlessingVideoBlob = async (key: string, blob: Blob): Promise<void> => {
+  const db = await openBlessingVideoDb();
+  await new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(BLESSING_VIDEO_STORE_NAME, 'readwrite');
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error ?? new Error('Failed to save local blessing video.'));
+    tx.objectStore(BLESSING_VIDEO_STORE_NAME).put(blob, key);
+  });
+  db.close();
+};
+
+const loadBlessingVideoBlob = async (key: string): Promise<Blob | null> => {
+  const db = await openBlessingVideoDb();
+  const result = await new Promise<Blob | null>((resolve, reject) => {
+    const tx = db.transaction(BLESSING_VIDEO_STORE_NAME, 'readonly');
+    const request = tx.objectStore(BLESSING_VIDEO_STORE_NAME).get(key);
+    request.onsuccess = () => {
+      const value = request.result;
+      resolve(value instanceof Blob ? value : null);
+    };
+    request.onerror = () => reject(request.error ?? new Error('Failed to load local blessing video.'));
+  });
+  db.close();
+  return result;
+};
 
 export const ActivityDetailPage = () => {
   const { festivalId } = useParams<{ festivalId: string }>();
@@ -14,10 +60,14 @@ export const ActivityDetailPage = () => {
   const { completedTaskIds, loadProgress, resetProgress, completeTask, isLoading, error } = useActivityStore();
   const [now, setNow] = useState(() => Date.now());
   const [isTaskPanelCollapsed, setIsTaskPanelCollapsed] = useState(true);
-  const [isRewardsCollapsed, setIsRewardsCollapsed] = useState(true);
+  const [isBlessingsCollapsed, setIsBlessingsCollapsed] = useState(false);
+  const [uploadedBlessingVideoUrl, setUploadedBlessingVideoUrl] = useState<string | null>(null);
+  const [blessingVideoError, setBlessingVideoError] = useState<string | null>(null);
+  const blessingVideoInputRef = useRef<HTMLInputElement | null>(null);
 
-  const userUid = user?.uid ?? null;
+  const progressOwnerKey = user?.uid ?? user?.email?.trim().toLowerCase() ?? 'guest';
   const festival = FESTIVAL_TEMPLATES.find((item) => item.id === festivalId);
+  const blessingVideoStorageKey = festival ? `${progressOwnerKey}::${festival.id}` : null;
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -28,12 +78,53 @@ export const ActivityDetailPage = () => {
   }, []);
 
   useEffect(() => {
-    if (!userUid || !festival?.id) {
+    if (!festival?.id) {
       resetProgress();
       return;
     }
-    void loadProgress(userUid, festival.id);
-  }, [festival?.id, loadProgress, resetProgress, userUid]);
+    void loadProgress(progressOwnerKey, festival.id);
+  }, [festival?.id, loadProgress, progressOwnerKey, resetProgress]);
+
+  useEffect(() => {
+    return () => {
+      if (uploadedBlessingVideoUrl) {
+        window.URL.revokeObjectURL(uploadedBlessingVideoUrl);
+      }
+    };
+  }, [uploadedBlessingVideoUrl]);
+
+  useEffect(() => {
+    let isActive = true;
+    if (!blessingVideoStorageKey) return;
+
+    void loadBlessingVideoBlob(blessingVideoStorageKey)
+      .then((blob) => {
+        if (!isActive) return;
+        if (!blob) {
+          setUploadedBlessingVideoUrl((prev) => {
+            if (prev) {
+              window.URL.revokeObjectURL(prev);
+            }
+            return null;
+          });
+          return;
+        }
+        const nextUrl = window.URL.createObjectURL(blob);
+        setUploadedBlessingVideoUrl((prev) => {
+          if (prev) {
+            window.URL.revokeObjectURL(prev);
+          }
+          return nextUrl;
+        });
+      })
+      .catch((error) => {
+        console.error('Load blessing video failed:', error);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [blessingVideoStorageKey]);
 
   if (!festival) {
     return (
@@ -97,20 +188,40 @@ export const ActivityDetailPage = () => {
 
   const handleTaskAction = async (task: ActivityTask) => {
     if (!isAdmin) return;
-    if (task.id === 'checkin') {
-      navigate(`/activity/${festival.id}/checkin`);
-      return;
-    }
     await handleTaskClick(task);
   };
 
   const getTaskActionText = (task: ActivityTask, isDone: boolean) => {
     if (!isAdmin) return '仅可查看';
-    if (task.id === 'checkin') return isDone ? '已签到' : '进入互动';
+    if (task.id === 'checkin' && isDone) return '已签到';
     if (isDone) return '已完成';
     if (status === 'upcoming') return '未开始';
     if (status === 'ended') return '已结束';
     return '立即完成';
+  };
+
+  const handleBlessingVideoUpload = (event: ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = event.target.files?.[0];
+    if (!selectedFile) return;
+
+    if (!blessingVideoStorageKey) return;
+
+    void saveBlessingVideoBlob(blessingVideoStorageKey, selectedFile)
+      .then(() => {
+        const nextUrl = window.URL.createObjectURL(selectedFile);
+        setUploadedBlessingVideoUrl((prev) => {
+          if (prev) {
+            window.URL.revokeObjectURL(prev);
+          }
+          return nextUrl;
+        });
+        setBlessingVideoError(null);
+      })
+      .catch((error) => {
+        console.error('Save blessing video failed:', error);
+        setBlessingVideoError('视频保存失败，请重试。');
+      });
+    event.target.value = '';
   };
 
   return (
@@ -202,36 +313,20 @@ export const ActivityDetailPage = () => {
           {festival.tasks.map((task) => {
             const Icon = task.icon;
             const isDone = completedTaskIds.includes(task.id);
-            const isCheckinTask = task.id === 'checkin';
-            const disabled = !isAdmin || (isCheckinTask ? false : status !== 'active' || isDone);
+            const disabled = !isAdmin || status !== 'active' || isDone;
             const actionText = getTaskActionText(task, isDone);
             const actionButtonClass = isDone
               ? 'border border-emerald-100 bg-emerald-50 text-emerald-600 cursor-pointer'
-              : isCheckinTask
-                ? 'bg-slate-900 text-white hover:bg-slate-800 cursor-pointer'
-                : status === 'active'
-                  ? `${festival.theme.actionButtonClass} cursor-pointer`
-                  : 'cursor-not-allowed bg-gray-100 text-gray-400';
+              : status === 'active'
+                ? `${festival.theme.actionButtonClass} cursor-pointer`
+                : 'cursor-not-allowed bg-gray-100 text-gray-400';
 
             return (
               <div
                 key={task.id}
                 className={`rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 ${
                   isTaskPanelCollapsed ? 'p-3' : 'p-4'
-                } ${isCheckinTask ? 'cursor-pointer hover:border-slate-300' : ''}`}
-                onClick={isAdmin && isCheckinTask ? () => navigate(`/activity/${festival.id}/checkin`) : undefined}
-                onKeyDown={
-                  isAdmin && isCheckinTask
-                    ? (event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          navigate(`/activity/${festival.id}/checkin`);
-                        }
-                      }
-                    : undefined
-                }
-                role={isAdmin && isCheckinTask ? 'button' : undefined}
-                tabIndex={isAdmin && isCheckinTask ? 0 : undefined}
+                }`}
               >
                 <div className={`flex gap-3 ${isTaskPanelCollapsed ? 'items-center' : 'items-start'}`}>
                   <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${task.bgColor}`}>
@@ -286,47 +381,69 @@ export const ActivityDetailPage = () => {
 
       <section className="mt-4 px-4">
         <div className="mb-2 flex items-center justify-between px-1">
-          <h2 className="text-[17px] font-semibold text-slate-800">活动奖励</h2>
+          <h2 className="text-[17px] font-semibold text-slate-800">节日祝福</h2>
           <button
             type="button"
-            onClick={() => setIsRewardsCollapsed((prev) => !prev)}
+            onClick={() => setIsBlessingsCollapsed((prev) => !prev)}
             className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-600 hover:bg-slate-50"
-            aria-expanded={!isRewardsCollapsed}
+            aria-expanded={!isBlessingsCollapsed}
           >
-            {isRewardsCollapsed ? '展开' : '折叠'}
-            {isRewardsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            {isBlessingsCollapsed ? '展开' : '折叠'}
+            {isBlessingsCollapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           </button>
         </div>
 
-        <div className="space-y-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
-          {festival.rewards.map((reward) => {
-            const unlocked = doneCount >= reward.threshold;
-            return (
-              <div
-                key={reward.id}
-                className={`flex items-center gap-3 rounded-xl border px-3 transition-all duration-300 ${
-                  isRewardsCollapsed ? 'py-2' : 'py-3'
-                } ${unlocked ? festival.theme.rewardUnlockedCardClass : 'border-gray-100 bg-gray-50/60'}`}
-              >
-                <span
-                  className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                    unlocked ? festival.theme.rewardUnlockedIconClass : 'bg-gray-100 text-gray-400'
-                  }`}
-                >
-                  <Gift size={15} />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <div className={`text-sm font-semibold ${unlocked ? festival.theme.rewardUnlockedTitleClass : 'text-slate-500'}`}>
-                    {reward.title}
-                  </div>
-                  {!isRewardsCollapsed ? <div className="mt-0.5 text-xs text-slate-400">{reward.description}</div> : null}
-                </div>
-                <span className={`text-xs font-semibold ${unlocked ? festival.theme.rewardUnlockedStatusClass : 'text-slate-400'}`}>
-                  {unlocked ? '已解锁' : '待解锁'}
-                </span>
+        <div className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+          {isBlessingsCollapsed ? (
+            <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/60 px-3 py-3">
+              <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+                <Video size={15} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-semibold text-slate-700">节日祝福主窗口</div>
               </div>
-            );
-          })}
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center justify-end">
+                <Video size={18} className="text-slate-400" />
+              </div>
+
+              {uploadedBlessingVideoUrl ? (
+                <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-900">
+                  <video src={uploadedBlessingVideoUrl} controls className="aspect-video w-full bg-black object-contain" />
+                </div>
+              ) : (
+                <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-900">
+                <div className="aspect-video w-full bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.2),transparent_45%),linear-gradient(135deg,#0f172a_0%,#1e293b_45%,#334155_100%)]">
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="rounded-2xl border border-white/20 bg-black/25 px-4 py-3 text-center text-white/90">
+                      <PlayCircle size={28} className="mx-auto" />
+                      <p className="mt-2 text-sm font-medium">主视频窗口（待接入）</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => blessingVideoInputRef.current?.click()}
+                className="mt-4 flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100"
+              >
+                <Upload size={16} className="text-slate-600" />
+                <span className="text-slate-600">上传视频</span>
+              </button>
+              <input
+                ref={blessingVideoInputRef}
+                type="file"
+                accept="video/*"
+                className="hidden"
+                onChange={handleBlessingVideoUpload}
+              />
+              {blessingVideoError ? <p className="mt-2 text-xs text-red-500">{blessingVideoError}</p> : null}
+            </>
+          )}
         </div>
       </section>
 
