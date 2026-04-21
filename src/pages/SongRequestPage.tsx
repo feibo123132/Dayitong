@@ -1,4 +1,4 @@
-import { ArrowLeft, Candy, Gamepad2, Gift, Menu, MessageCircleHeart, Music, Send } from 'lucide-react';
+﻿import { ArrowLeft, Candy, Gamepad2, Gift, Menu, MessageCircleHeart, Music, Send } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSongRequestStore } from '../store/useSongRequestStore';
@@ -70,9 +70,23 @@ export const SongRequestPage = () => {
     if (syncResult.status === 'ok') {
       setSyncFeedback('已提交并同步到飞书汇总。');
     } else if (syncResult.status === 'skipped') {
-      setSyncFeedback('已提交到许愿池，飞书汇总未配置。');
+      if (syncResult.reason === 'endpoint_unreachable') {
+        setSyncFeedback('已提交到许愿池，飞书同步服务未启动（127.0.0.1:8787）。');
+      } else if (syncResult.reason === 'request_timeout') {
+        setSyncFeedback('已提交到许愿池，飞书汇总请求超时，请稍后重试。');
+      } else {
+        setSyncFeedback('已提交到许愿池，飞书汇总未配置。');
+      }
     } else {
-      setSyncFeedback(`已提交到许愿池，飞书汇总失败：${syncResult.error}`);
+      const missingEnvMatch = syncResult.error.match(/missing_env:([A-Z0-9_,]+)/i);
+      if (missingEnvMatch?.[1]) {
+        const missingEnvText = missingEnvMatch[1].split(',').join('、');
+        setSyncFeedback(`已提交到许愿池，飞书网关缺少配置：${missingEnvText}。`);
+      } else if (/lark-cli/i.test(syncResult.error)) {
+        setSyncFeedback('已提交到许愿池，飞书 CLI 执行失败，请先完成 lark-cli 登录与权限配置。');
+      } else {
+        setSyncFeedback(`已提交到许愿池，飞书汇总失败：${syncResult.error}`);
+      }
     }
 
     setMessage('');

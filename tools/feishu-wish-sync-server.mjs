@@ -1,15 +1,55 @@
 ﻿import { createServer } from 'node:http';
 import { spawn } from 'node:child_process';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
+
+const SHELL_ENV_KEYS = new Set(Object.keys(process.env));
+
+const loadEnvFiles = () => {
+  const envFiles = ['.env', '.env.local', '.env.wish-sync.local'];
+
+  for (const fileName of envFiles) {
+    const filePath = resolve(process.cwd(), fileName);
+    if (!existsSync(filePath)) continue;
+
+    const content = readFileSync(filePath, 'utf8');
+    const lines = content.split(/\r?\n/);
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || trimmed.startsWith('#')) continue;
+
+      const equalsIndex = trimmed.indexOf('=');
+      if (equalsIndex <= 0) continue;
+
+      const key = trimmed.slice(0, equalsIndex).trim();
+      if (!key || SHELL_ENV_KEYS.has(key)) continue;
+
+      let value = trimmed.slice(equalsIndex + 1).trim();
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
+        value = value.slice(1, -1);
+      }
+
+      process.env[key] = value;
+    }
+  }
+};
+
+loadEnvFiles();
 
 const PORT = Number.parseInt(process.env.PORT ?? '8787', 10);
 const DEFAULT_CLI_BIN = 'lark-cli';
 const CLI_BIN = process.env.LARK_CLI_BIN ?? DEFAULT_CLI_BIN;
 const IS_WINDOWS = process.platform === 'win32';
-const SYNC_TOKEN = process.env.JIEYOU_SYNC_TOKEN?.trim() ?? '';
-const BASE_TOKEN = process.env.FEISHU_BASE_TOKEN?.trim() ?? '';
-const BASE_TABLE_ID = process.env.FEISHU_BASE_TABLE_ID?.trim() ?? '';
+const SYNC_TOKEN =
+  process.env.JIEYOU_SYNC_TOKEN?.trim() ?? process.env.VITE_JIEYOU_WISH_SYNC_TOKEN?.trim() ?? '';
+const BASE_TOKEN =
+  process.env.FEISHU_BASE_TOKEN?.trim() ?? process.env.VITE_FEISHU_BASE_TOKEN?.trim() ?? '';
+const BASE_TABLE_ID =
+  process.env.FEISHU_BASE_TABLE_ID?.trim() ?? process.env.VITE_FEISHU_BASE_TABLE_ID?.trim() ?? '';
 const NOTIFY_CHAT_ID = process.env.FEISHU_NOTIFY_CHAT_ID?.trim() ?? '';
 
 const CATEGORY_OPTION_MAP = {
@@ -22,6 +62,13 @@ const CATEGORY_OPTION_MAP = {
 const fail = (res, statusCode, message) => {
   res.writeHead(statusCode, { 'content-type': 'application/json; charset=utf-8' });
   res.end(JSON.stringify({ ok: false, error: message }));
+};
+
+const getMissingRequiredEnv = () => {
+  const missing = [];
+  if (!BASE_TOKEN) missing.push('FEISHU_BASE_TOKEN');
+  if (!BASE_TABLE_ID) missing.push('FEISHU_BASE_TABLE_ID');
+  return missing;
 };
 
 const setCorsHeaders = (req, res) => {
@@ -55,7 +102,8 @@ const runCli = (args) =>
         resolve({ stdout, stderr });
         return;
       }
-      reject(new Error(stderr || stdout || `lark-cli exited with code ${code}`));
+      const output = (stderr || stdout || '').trim();
+      reject(new Error(`lark-cli failed: ${output || `exited with code ${code}`}`));
     });
   });
 
@@ -125,8 +173,9 @@ const createRelativeJsonPayload = (fields) => {
 };
 
 const upsertWishRecord = async ({ categoryLabel, message, submittedAt, userUid, userEmail }) => {
-  if (!BASE_TOKEN || !BASE_TABLE_ID) {
-    throw new Error('FEISHU_BASE_TOKEN / FEISHU_BASE_TABLE_ID not configured');
+  const missing = getMissingRequiredEnv();
+  if (missing.length > 0) {
+    throw new Error(`missing_env:${missing.join(',')}`);
   }
 
   const categoryOption = resolveCategoryOption(categoryLabel);
@@ -190,7 +239,14 @@ const server = createServer(async (req, res) => {
 
   if (req.method === 'GET' && req.url === '/health') {
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-    res.end(JSON.stringify({ ok: true }));
+    const missing = getMissingRequiredEnv();
+    res.end(
+      JSON.stringify({
+        ok: true,
+        ready: missing.length === 0,
+        missingEnv: missing,
+      }),
+    );
     return;
   }
 
@@ -204,6 +260,12 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  const missing = getMissingRequiredEnv();
+  if (missing.length > 0) {
+    fail(res, 503, `missing_env:${missing.join(',')}`);
+    return;
+  }
+
   try {
     const body = await parseJsonBody(req);
     const wish = normalizeWishPayload(body);
@@ -213,7 +275,13 @@ const server = createServer(async (req, res) => {
     }
 
     await upsertWishRecord(wish);
-    await maybeNotify(wish);
+    try {
+      await maybeNotify(wish);
+    } catch (notifyError) {
+      const notifyMessage =
+        notifyError instanceof Error && notifyError.message ? notifyError.message : 'unknown notify error';
+      console.warn(`[wish-sync] notify skipped: ${notifyMessage}`);
+    }
 
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
     res.end(JSON.stringify({ ok: true }));
