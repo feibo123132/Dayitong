@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "wish-sync:server": "node tools/feishu-wish-sync-server.mjs",
+    "wish-sync:public": "node tools/wish-sync-public-tunnel.mjs",
     "lyrics:sofa2lrc": "python tools/sofa_textgrid_to_lrc.py",
     "lyrics:auto": "python tools/sofa_auto_pipeline.py"
   },

@@ -17,27 +17,22 @@ const createPayloadInput = (categoryId: WishCategoryId) => ({
   submittedAt: 1713240000000,
 });
 
-test('getWishSyncEndpoint returns null when endpoint is missing', () => {
-  assert.equal(getWishSyncEndpoint({}), null);
-});
-
-test('getWishSyncEndpoint trims endpoint value', () => {
-  assert.equal(getWishSyncEndpoint({ VITE_JIEYOU_WISH_SYNC_ENDPOINT: ' https://example.com/wish ' }), 'https://example.com/wish');
-});
-
-test('getWishSyncEndpoint falls back to local gateway when browser env is missing', () => {
-  const globalWithWindow = globalThis as typeof globalThis & {
-    window?: { location: { hostname: string } };
+const withBrowser = async <T>(
+  browser: { location: { hostname: string }; navigator?: { userAgent?: string } },
+  callback: () => T | Promise<T>,
+): Promise<T> => {
+  const globalWithBrowser = globalThis as typeof globalThis & {
+    window?: typeof browser;
   };
-  const originalWindow = globalWithWindow.window;
+  const originalWindow = globalWithBrowser.window;
 
   Object.defineProperty(globalThis, 'window', {
     configurable: true,
-    value: { location: { hostname: 'example.github.io' } },
+    value: browser,
   });
 
   try {
-    assert.equal(getWishSyncEndpoint({}), 'http://127.0.0.1:8787/wish/submit');
+    return await callback();
   } finally {
     if (originalWindow === undefined) {
       Reflect.deleteProperty(globalThis, 'window');
@@ -48,6 +43,66 @@ test('getWishSyncEndpoint falls back to local gateway when browser env is missin
       });
     }
   }
+};
+
+test('getWishSyncEndpoint returns null when endpoint is missing', () => {
+  assert.equal(getWishSyncEndpoint({}), null);
+});
+
+test('getWishSyncEndpoint trims endpoint value', () => {
+  assert.equal(getWishSyncEndpoint({ VITE_JIEYOU_WISH_SYNC_ENDPOINT: ' https://example.com/wish ' }), 'https://example.com/wish');
+});
+
+test('getWishSyncEndpoint falls back to local gateway for desktop browser env without config', async () => {
+  await withBrowser(
+    {
+      location: { hostname: 'example.github.io' },
+      navigator: { userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/125 Safari/537.36' },
+    },
+    () => {
+      assert.equal(getWishSyncEndpoint({}), 'http://127.0.0.1:8787/wish/submit');
+    },
+  );
+});
+
+test('getWishSyncEndpoint does not send remote mobile browsers to localhost', async () => {
+  await withBrowser(
+    {
+      location: { hostname: 'example.github.io' },
+      navigator: {
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 Mobile/15E148 Safari/604.1',
+      },
+    },
+    () => {
+      assert.equal(getWishSyncEndpoint({}), null);
+      assert.equal(
+        getWishSyncEndpoint({ VITE_JIEYOU_WISH_SYNC_ENDPOINT: 'http://127.0.0.1:8787/wish/submit' }),
+        null,
+      );
+    },
+  );
+});
+
+test('getWishSyncEndpoint uses public endpoint for remote mobile browsers', async () => {
+  await withBrowser(
+    {
+      location: { hostname: 'example.github.io' },
+      navigator: {
+        userAgent:
+          'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/125 Mobile Safari/537.36',
+      },
+    },
+    () => {
+      assert.equal(
+        getWishSyncEndpoint({
+          VITE_JIEYOU_WISH_SYNC_ENDPOINT: 'http://127.0.0.1:8787/wish/submit',
+          VITE_JIEYOU_WISH_SYNC_PUBLIC_ENDPOINT: 'https://jieyou-sync.example.com/wish/submit',
+        }),
+        'https://jieyou-sync.example.com/wish/submit',
+      );
+    },
+  );
 });
 
 test('buildWishSyncPayload keeps structured fields for Feishu aggregation', () => {
@@ -70,6 +125,29 @@ test('syncWishToFeishu skips remote sync when endpoint is not configured', async
   });
 
   assert.equal(result.status, 'skipped');
+});
+
+test('syncWishToFeishu explains missing public endpoint for remote mobile browsers', async () => {
+  await withBrowser(
+    {
+      location: { hostname: 'example.github.io' },
+      navigator: {
+        userAgent:
+          'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36 Chrome/125 Mobile Safari/537.36',
+      },
+    },
+    async () => {
+      const result = await syncWishToFeishu(buildWishSyncPayload(createPayloadInput('song')), {
+        env: { VITE_JIEYOU_WISH_SYNC_ENDPOINT: 'http://127.0.0.1:8787/wish/submit' },
+        fetchImpl: async () => {
+          throw new Error('fetch should not be called for mobile localhost endpoint');
+        },
+      });
+
+      assert.equal(result.status, 'skipped');
+      assert.equal(result.reason, 'mobile_public_endpoint_not_configured');
+    },
+  );
 });
 
 test('syncWishToFeishu posts json payload to configured endpoint', async () => {

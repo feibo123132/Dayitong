@@ -294,3 +294,5 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, () => {
   console.log(`[wish-sync] listening on http://127.0.0.1:${PORT}`);
 });
+
+export { server };

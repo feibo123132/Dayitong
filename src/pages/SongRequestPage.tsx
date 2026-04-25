@@ -74,6 +74,8 @@ export const SongRequestPage = () => {
         setSyncFeedback('已提交到许愿池，飞书同步服务未启动（127.0.0.1:8787）。');
       } else if (syncResult.reason === 'request_timeout') {
         setSyncFeedback('已提交到许愿池，飞书汇总请求超时，请稍后重试。');
+      } else if (syncResult.reason === 'mobile_public_endpoint_not_configured') {
+        setSyncFeedback('已提交到许愿池，手机端需要配置公网 HTTPS 飞书同步端点。');
       } else {
         setSyncFeedback('已提交到许愿池，飞书汇总未配置。');
       }

@@ -36,6 +36,11 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Build
+        env:
+          VITE_TCB_ENV_ID: ${{ vars.VITE_TCB_ENV_ID }}
+          VITE_JIEYOU_WISH_SYNC_ENDPOINT: ${{ vars.VITE_JIEYOU_WISH_SYNC_ENDPOINT }}
+          VITE_JIEYOU_WISH_SYNC_PUBLIC_ENDPOINT: ${{ vars.VITE_JIEYOU_WISH_SYNC_PUBLIC_ENDPOINT }}
+          VITE_JIEYOU_WISH_SYNC_TOKEN: ${{ vars.VITE_JIEYOU_WISH_SYNC_TOKEN }}
         run: pnpm run build
 
       - name: Upload Pages Artifact

@@ -2,6 +2,7 @@ export type WishCategoryId = 'gift' | 'snack' | 'play' | 'song';
 
 interface WishSyncEnv {
   VITE_JIEYOU_WISH_SYNC_ENDPOINT?: string;
+  VITE_JIEYOU_WISH_SYNC_PUBLIC_ENDPOINT?: string;
   VITE_JIEYOU_WISH_SYNC_TOKEN?: string;
 }
 
@@ -30,6 +31,7 @@ export interface WishSyncPayload {
 
 export type WishSyncSkippedReason =
   | 'endpoint_not_configured'
+  | 'mobile_public_endpoint_not_configured'
   | 'endpoint_unreachable'
   | 'request_timeout';
 
@@ -69,10 +71,37 @@ const isNetworkFetchError = (error: unknown): boolean => {
   return /failed to fetch|networkerror|fetch failed|connection refused|err_connection_refused/i.test(error.message);
 };
 
+const isLocalBrowserHostname = (hostname: string): boolean => {
+  return hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '::1';
+};
+
+const getCurrentBrowser = ():
+  | {
+      location?: { hostname?: string };
+      navigator?: { userAgent?: string };
+    }
+  | null => {
+  if (typeof window === 'undefined') return null;
+  return window;
+};
+
+const isLikelyMobileBrowser = (userAgent: string | undefined): boolean => {
+  if (!userAgent) return false;
+  return /android|iphone|ipad|ipod|mobile|windows phone/i.test(userAgent);
+};
+
+const isRemoteMobileBrowser = (): boolean => {
+  const browser = getCurrentBrowser();
+  const hostname = browser?.location?.hostname;
+  if (!hostname || isLocalBrowserHostname(hostname)) return false;
+
+  return isLikelyMobileBrowser(browser?.navigator?.userAgent);
+};
+
 const isLoopbackEndpoint = (endpoint: string): boolean => {
   try {
     const { hostname } = new URL(endpoint);
-    return hostname === '127.0.0.1' || hostname === 'localhost' || hostname === '::1';
+    return isLocalBrowserHostname(hostname);
   } catch {
     return /^https?:\/\/(127\.0\.0\.1|localhost|::1)(:\d+)?(?:\/|$)/i.test(endpoint);
   }
@@ -102,6 +131,14 @@ const readResponseErrorText = async (response: Response): Promise<string | null>
 
 export const getWishSyncEndpoint = (env: Partial<WishSyncEnv> = getDefaultEnv()): string | null => {
   const endpoint = normalizeOptionalText(env.VITE_JIEYOU_WISH_SYNC_ENDPOINT);
+  const publicEndpoint = normalizeOptionalText(env.VITE_JIEYOU_WISH_SYNC_PUBLIC_ENDPOINT);
+
+  if (isRemoteMobileBrowser()) {
+    if (publicEndpoint) return publicEndpoint;
+    if (endpoint && !isLoopbackEndpoint(endpoint)) return endpoint;
+    return null;
+  }
+
   if (endpoint) return endpoint;
 
   if (typeof window !== 'undefined') {
@@ -132,6 +169,9 @@ export const syncWishToFeishu = async (
   const env = options.env ?? getDefaultEnv();
   const endpoint = getWishSyncEndpoint(env);
   if (!endpoint) {
+    if (isRemoteMobileBrowser()) {
+      return { status: 'skipped', reason: 'mobile_public_endpoint_not_configured' };
+    }
     return { status: 'skipped', reason: 'endpoint_not_configured' };
   }
 
