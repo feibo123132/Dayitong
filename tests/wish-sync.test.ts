@@ -25,6 +25,31 @@ test('getWishSyncEndpoint trims endpoint value', () => {
   assert.equal(getWishSyncEndpoint({ VITE_JIEYOU_WISH_SYNC_ENDPOINT: ' https://example.com/wish ' }), 'https://example.com/wish');
 });
 
+test('getWishSyncEndpoint falls back to local gateway when browser env is missing', () => {
+  const globalWithWindow = globalThis as typeof globalThis & {
+    window?: { location: { hostname: string } };
+  };
+  const originalWindow = globalWithWindow.window;
+
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: { location: { hostname: 'example.github.io' } },
+  });
+
+  try {
+    assert.equal(getWishSyncEndpoint({}), 'http://127.0.0.1:8787/wish/submit');
+  } finally {
+    if (originalWindow === undefined) {
+      Reflect.deleteProperty(globalThis, 'window');
+    } else {
+      Object.defineProperty(globalThis, 'window', {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  }
+});
+
 test('buildWishSyncPayload keeps structured fields for Feishu aggregation', () => {
   const payload = buildWishSyncPayload(createPayloadInput('gift'));
 

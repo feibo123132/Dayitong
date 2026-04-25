@@ -105,10 +105,7 @@ export const getWishSyncEndpoint = (env: Partial<WishSyncEnv> = getDefaultEnv())
   if (endpoint) return endpoint;
 
   if (typeof window !== 'undefined') {
-    const host = window.location.hostname;
-    if (host === 'localhost' || host === '127.0.0.1') {
-      return LOCAL_FALLBACK_ENDPOINT;
-    }
+    return LOCAL_FALLBACK_ENDPOINT;
   }
 
   return null;
